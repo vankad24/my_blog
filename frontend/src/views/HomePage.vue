@@ -1,0 +1,141 @@
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { usePostsStore } from '@/stores/posts'
+import { useAuthStore } from '@/stores/auth'
+import PostList from '@/components/PostList.vue'
+import Pagination from '@/components/Pagination.vue'
+
+const postsStore = usePostsStore()
+const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+
+const loading = ref(false)
+const currentPage = ref(parseInt(route.query.page) || 1)
+const searchQuery = ref(route.query.search || '')
+const selectedCategory = ref(route.query.category || '')
+const selectedTag = ref(route.query.tag || '')
+const pageSize = 20
+
+const totalPages = computed(() => Math.ceil(postsStore.pagination.count / pageSize))
+
+onMounted(() => {
+  loadPosts()
+  postsStore.fetchCategories()
+  postsStore.fetchTags()
+})
+
+watch([currentPage, searchQuery, selectedCategory, selectedTag], () => {
+  router.replace({
+    query: {
+      page: currentPage.value > 1 ? currentPage.value : undefined,
+      search: searchQuery.value || undefined,
+      category: selectedCategory.value || undefined,
+      tag: selectedTag.value || undefined,
+    }
+  })
+  loadPosts()
+})
+
+async function loadPosts() {
+  loading.value = true
+  try {
+    await postsStore.fetchPosts({
+      page: currentPage.value,
+      search: searchQuery.value || undefined,
+      category: selectedCategory.value || undefined,
+      tag: selectedTag.value || undefined,
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+function handlePageChange(page) {
+  currentPage.value = page
+}
+
+async function handleLike(slug) {
+  if (!authStore.isAuthenticated) {
+    router.push('/login')
+    return
+  }
+  const result = await postsStore.likePost(slug)
+  // Обновляем пост в списке
+  const post = postsStore.posts.find(p => p.slug === slug)
+  if (post) {
+    post.is_liked = result.liked
+    post.likes_count = result.likes_count
+  }
+}
+</script>
+
+<template>
+  <div>
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Блог</h1>
+      <p class="text-gray-600">Интересные статьи и заметки</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div class="flex flex-wrap gap-4">
+        <!-- Search -->
+        <div class="flex-1 min-w-[200px]">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Поиск по заголовкам..."
+            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+
+        <!-- Category filter -->
+        <select
+          v-model="selectedCategory"
+          class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        >
+          <option value="">Все категории</option>
+          <option
+            v-for="cat in postsStore.categories"
+            :key="cat.slug"
+            :value="cat.slug"
+          >
+            {{ cat.name }}
+          </option>
+        </select>
+
+        <!-- Tag filter -->
+        <select
+          v-model="selectedTag"
+          class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        >
+          <option value="">Все теги</option>
+          <option
+            v-for="tag in postsStore.tags"
+            :key="tag.slug"
+            :value="tag.slug"
+          >
+            #{{ tag.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Posts -->
+    <PostList
+      :posts="postsStore.posts"
+      :loading="loading"
+      @like="handleLike"
+    />
+
+    <!-- Pagination -->
+    <Pagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      @page-change="handlePageChange"
+    />
+  </div>
+</template>
