@@ -1,11 +1,11 @@
-# MyBlog — миграция с Laravel на Vue + Django
+# MyBlog — Vue 3 + Django REST Framework
 
 ## О проекте
 Веб-блог для публикации постов с комментариями, лайками, модерацией и ролевой системой.
-Изначально был написан на Laravel (PHP), сейчас переписывается на Vue 3 + Django REST Framework.
+Полностью переписан с Laravel (PHP) на Vue 3 + Django REST Framework. Laravel-код удалён.
 
 ## Текущий статус
-Миграция завершена на 95%. Laravel-код пока не удалён и лежит в корне проекта.
+Миграция завершена на 100%. Проект полностью на Django + Vue.
 
 ## Архитектура
 
@@ -15,6 +15,7 @@
 - Документация API: drf-spectacular (Swagger: `/api/docs/`)
 - База данных: PostgreSQL (my_blog, user: postgres, pass: 242424)
 - Виртуальное окружение: `backend/venv/`
+- Production-сервер: gunicorn (3 воркера)
 
 #### Приложения (apps)
 ```
@@ -53,8 +54,10 @@ backend/
 - Мягкое удаление: Post и Comment помечаются deleted_at, но не удаляются физически
 - GenericRelation на Post: `post.comments`, `post.moderations`
 - GenericRelation на Comment: `comment.moderations`
-- Post создаётся со статусом `moderation`, после одобрения модератором — `published`
+- Post создаётся со статусом `moderation`, автоматически создаётся запись в `Moderation`
+- После одобрения модератором статус поста меняется на `published`
 - DEBUG=True — токены восстановления/верификации возвращаются в ответе
+- `content_type_name` в сериализаторе Moderation используется точечный `source='content_type.model'`
 
 ### Фронтенд: Vue 3 + Vite + Pinia + Tailwind CSS
 - **Node.js 24**, Vue 3.5, Vite 6, Pinia 3, Axios 1.7
@@ -87,6 +90,20 @@ src/
     ├── LikedPosts.vue     # Избранные посты
     ├── ModerationPage.vue # Панель модерации (вкладки, принять/отклонить)
     └── NotFound.vue       # 404
+```
+
+#### Структура frontend/
+```
+frontend/
+├── index.html           # Точка входа
+├── package.json         # Зависимости
+├── vite.config.js       # Proxy на Django, алиас @
+├── tailwind.config.js   # Tailwind CSS
+├── postcss.config.js    # PostCSS
+├── Dockerfile           # Multi-stage (Node build → Nginx serve)
+├── public/              # Статика (favicon, иконки)
+│   └── favicon.svg      # Favicon (синий квадрат с буквой B)
+└── src/                 # Исходный код Vue
 ```
 
 ### Инфраструктура
@@ -122,8 +139,11 @@ npm run preview                               # Превью сборки
 
 ## Известные особенности
 1. **Rich Text Editor** — пока не реализован, контент вводится как HTML в `<textarea>`
-2. **Laravel-код** — всё ещё в корне проекта (app/, routes/, config/, resources/ и т.д.)
-3. **Email** — в разработке отправка выключена, токены возвращаются в ответе (DEBUG mode)
-4. **Slug** — генерируется из названия, при дубликате добавляется `-1`, `-2` и т.д.
-5. **JWT** — access 60 мин, refresh 7 дней, с blacklist при logout
-6. **CORS** — настроен на `localhost:5173` и `localhost:3000`
+2. **Email** — в разработке отправка выключена, токены возвращаются в ответе (DEBUG mode)
+3. **Slug** — генерируется из названия, при дубликате добавляется `-1`, `-2` и т.д.
+4. **JWT** — access 60 мин, refresh 7 дней, с blacklist при logout
+5. **CORS** — настроен на `localhost:5173` и `localhost:3000`
+6. **auto-init** — `authStore.init()` вызывается в `main.js` при загрузке приложения
+7. **errorHandler** — перехватчик ошибок Vue включён только в dev-режиме (`import.meta.env.DEV`)
+8. **Moderation auto-create** — при создании поста автоматически создаётся запись `Moderation`
+9. **Favicon** — лежит в `frontend/public/favicon.svg`, Vite копирует в `dist/` при сборке
