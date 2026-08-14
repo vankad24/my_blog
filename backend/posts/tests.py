@@ -1,30 +1,8 @@
 from django.test import TestCase
 from rest_framework.test import APITestCase
 from rest_framework import status
-from .models import Post, Category, Tag, PostLike
+from .models import Post, Tag, PostLike
 from users.models import User
-
-
-class CategoryModelTest(TestCase):
-    """Тесты модели Category."""
-
-    def test_create_category(self):
-        """Создание категории."""
-        cat = Category.objects.create(name='Технологии')
-        # objects.create bypassает save(), поэтому slug пустой
-        # Проверяем только имя
-        self.assertEqual(cat.name, 'Технологии')
-        self.assertEqual(str(cat), 'Технологии')
-
-    def test_category_slug_generation(self):
-        cat = Category(name='My Category')
-        cat.save()
-        self.assertEqual(cat.slug, 'my-category')
-
-    def test_category_unique_name(self):
-        Category.objects.create(name='Tech')
-        with self.assertRaises(Exception):
-            Category.objects.create(name='Tech')
 
 
 class TagModelTest(TestCase):
@@ -48,7 +26,6 @@ class PostModelTest(TestCase):
         self.author = User.objects.create_user(
             login='author', email='author@example.com', password='testpass123'
         )
-        self.category = Category.objects.create(name='Tech')
         self.tag = Tag.objects.create(name='python')
 
     def test_create_post(self):
@@ -56,7 +33,6 @@ class PostModelTest(TestCase):
             title='Test Post',
             content='Content here',
             author=self.author,
-            category=self.category,
             status=Post.Status.PUBLISHED,
         )
         self.assertEqual(post.title, 'Test Post')
@@ -192,13 +168,11 @@ class PostAPITest(APITestCase):
         self.admin = User.objects.create_superuser(
             login='admin', email='admin@example.com', password='adminpass123'
         )
-        self.category = Category.objects.create(name='Tech')
         self.tag = Tag.objects.create(name='python')
         self.post = Post.objects.create(
             title='Published Post',
             content='Published content',
             author=self.author,
-            category=self.category,
             status=Post.Status.PUBLISHED,
         )
         self.post.tags.add(self.tag)
@@ -214,12 +188,6 @@ class PostAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['title'], 'Published Post')
-
-    def test_list_posts_filter_by_category(self):
-        """Фильтрация по категории."""
-        response = self.client.get('/api/posts/?category=tech')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 1)
 
     def test_list_posts_filter_by_tag(self):
         """Фильтрация по тегу."""
@@ -245,7 +213,6 @@ class PostAPITest(APITestCase):
         data = {
             'title': 'New Post',
             'content': 'New content',
-            'category': self.category.pk,
         }
         response = self.client.post('/api/posts/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -257,7 +224,6 @@ class PostAPITest(APITestCase):
         data = {
             'title': 'New Post',
             'content': 'New content',
-            'category': self.category.pk,
         }
         response = self.client.post('/api/posts/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -311,12 +277,6 @@ class PostAPITest(APITestCase):
 
         self.client.post(f'/api/posts/{self.post.slug}/like/')
         response = self.client.get('/api/posts/liked/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 1)
-
-    def test_categories_list(self):
-        """Список категорий."""
-        response = self.client.get('/api/categories/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
 

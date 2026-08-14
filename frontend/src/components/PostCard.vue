@@ -14,7 +14,6 @@ const authStore = useAuthStore()
 
 const authorName = computed(() => props.post.author_name || props.post.author?.name || props.post.author_login)
 const authorLogin = computed(() => props.post.author_login || props.post.author?.login)
-const categoryName = computed(() => props.post.category_name || props.post.category?.name)
 const isLiked = computed(() => props.post.is_liked)
 const likesCount = computed(() => props.post.likes_count)
 
@@ -38,14 +37,8 @@ function handleLike() {
 <template>
   <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
     <div class="p-6">
-      <!-- Category -->
-      <div class="flex items-center space-x-2 mb-3">
-        <span
-          v-if="categoryName"
-          class="inline-block bg-primary-50 text-primary-700 text-xs font-medium px-2.5 py-1 rounded-full"
-        >
-          {{ categoryName }}
-        </span>
+      <!-- Status badge -->
+      <div class="mb-3">
         <span
           v-if="post.status === 'draft'"
           class="inline-block bg-yellow-50 text-yellow-700 text-xs font-medium px-2.5 py-1 rounded-full"
@@ -53,7 +46,7 @@ function handleLike() {
           Черновик
         </span>
         <span
-          v-if="post.status === 'moderation'"
+          v-else-if="post.status === 'moderation'"
           class="inline-block bg-orange-50 text-orange-700 text-xs font-medium px-2.5 py-1 rounded-full"
         >
           На модерации
@@ -66,11 +59,6 @@ function handleLike() {
           {{ post.title }}
         </h2>
       </router-link>
-
-      <!-- Excerpt -->
-      <p v-if="post.excerpt" class="text-gray-600 mb-4 line-clamp-2">
-        {{ post.excerpt }}
-      </p>
 
       <!-- Tags -->
       <div v-if="post.tags?.length" class="flex flex-wrap gap-1.5 mb-4">

@@ -5,7 +5,6 @@ import apiClient from '@/api/client'
 export const usePostsStore = defineStore('posts', () => {
   const posts = ref([])
   const currentPost = ref(null)
-  const categories = ref([])
   const tags = ref([])
   const pagination = ref({
     count: 0,
@@ -55,12 +54,6 @@ export const usePostsStore = defineStore('posts', () => {
     return data.results || data
   }
 
-  async function fetchCategories() {
-    const { data } = await apiClient.get('/categories/')
-    categories.value = data.results || data
-    return categories.value
-  }
-
   async function fetchTags() {
     const { data } = await apiClient.get('/tags/')
     tags.value = data.results || data
@@ -82,7 +75,6 @@ export const usePostsStore = defineStore('posts', () => {
   return {
     posts,
     currentPost,
-    categories,
     tags,
     pagination,
     fetchPosts,
@@ -92,7 +84,6 @@ export const usePostsStore = defineStore('posts', () => {
     deletePost,
     likePost,
     fetchLikedPosts,
-    fetchCategories,
     fetchTags,
     fetchComments,
     createComment,

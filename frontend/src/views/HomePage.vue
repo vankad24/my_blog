@@ -14,7 +14,6 @@ const router = useRouter()
 const loading = ref(false)
 const currentPage = ref(parseInt(route.query.page) || 1)
 const searchQuery = ref(route.query.search || '')
-const selectedCategory = ref(route.query.category || '')
 const selectedTag = ref(route.query.tag || '')
 const pageSize = 20
 
@@ -22,16 +21,14 @@ const totalPages = computed(() => Math.ceil(postsStore.pagination.count / pageSi
 
 onMounted(() => {
   loadPosts()
-  postsStore.fetchCategories()
   postsStore.fetchTags()
 })
 
-watch([currentPage, searchQuery, selectedCategory, selectedTag], () => {
+watch([currentPage, searchQuery, selectedTag], () => {
   router.replace({
     query: {
       page: currentPage.value > 1 ? currentPage.value : undefined,
       search: searchQuery.value || undefined,
-      category: selectedCategory.value || undefined,
       tag: selectedTag.value || undefined,
     }
   })
@@ -44,7 +41,6 @@ async function loadPosts() {
     await postsStore.fetchPosts({
       page: currentPage.value,
       search: searchQuery.value || undefined,
-      category: selectedCategory.value || undefined,
       tag: selectedTag.value || undefined,
     })
   } finally {
@@ -91,21 +87,6 @@ async function handleLike(slug) {
             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
-
-        <!-- Category filter -->
-        <select
-          v-model="selectedCategory"
-          class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-        >
-          <option value="">Все категории</option>
-          <option
-            v-for="cat in postsStore.categories"
-            :key="cat.slug"
-            :value="cat.slug"
-          >
-            {{ cat.name }}
-          </option>
-        </select>
 
         <!-- Tag filter -->
         <select

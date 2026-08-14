@@ -3,7 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.test import APITestCase
 from rest_framework import status
 from .models import Moderation
-from posts.models import Post, Category
+from posts.models import Post
 from comments.models import Comment
 from users.models import User
 

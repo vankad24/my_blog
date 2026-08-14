@@ -9,15 +9,12 @@ const postsStore = usePostsStore()
 const form = ref({
   title: '',
   content: '',
-  excerpt: '',
-  category: null,
   tags: [],
 })
 const loading = ref(false)
 const error = ref('')
 
 onMounted(() => {
-  postsStore.fetchCategories()
   postsStore.fetchTags()
 })
 
@@ -33,8 +30,6 @@ async function handleSubmit() {
     const data = {
       title: form.value.title,
       content: form.value.content,
-      excerpt: form.value.excerpt,
-      category: form.value.category || undefined,
       tags: form.value.tags,
     }
     const post = await postsStore.createPost(data)
@@ -73,49 +68,20 @@ async function handleSubmit() {
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Краткое описание</label>
-        <textarea
-          v-model="form.excerpt"
-          rows="2"
-          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          placeholder="Краткое описание (необязательно)"
-        ></textarea>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Категория</label>
-          <select
-            v-model="form.category"
-            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        <label class="block text-sm font-medium text-gray-700 mb-1">Теги</label>
+        <select
+          v-model="form.tags"
+          multiple
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent h-20"
+        >
+          <option
+            v-for="tag in postsStore.tags"
+            :key="tag.id"
+            :value="tag.slug"
           >
-            <option :value="null">Без категории</option>
-            <option
-              v-for="cat in postsStore.categories"
-              :key="cat.id"
-              :value="cat.id"
-            >
-              {{ cat.name }}
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Теги</label>
-          <select
-            v-model="form.tags"
-            multiple
-            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent h-20"
-          >
-            <option
-              v-for="tag in postsStore.tags"
-              :key="tag.id"
-              :value="tag.slug"
-            >
-              #{{ tag.name }}
-            </option>
-          </select>
-        </div>
+            #{{ tag.name }}
+          </option>
+        </select>
       </div>
 
       <div>

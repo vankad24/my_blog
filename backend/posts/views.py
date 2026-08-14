@@ -2,13 +2,12 @@ from rest_framework import status, permissions, generics, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.utils import timezone
-from .models import Post, PostLike, Category, Tag
+from .models import Post, PostLike, Tag
 from .serializers import (
     PostListSerializer,
     PostDetailSerializer,
     PostCreateUpdateSerializer,
     PostLikeSerializer,
-    CategorySerializer,
     TagSerializer,
 )
 
@@ -23,7 +22,7 @@ class PostListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         queryset = Post.objects.select_related(
-            'author', 'category'
+            'author'
         ).prefetch_related('tags').all()
 
         # Фильтрация по статусу
@@ -33,11 +32,6 @@ class PostListView(generics.ListCreateAPIView):
         else:
             # По умолчанию показываем только опубликованные
             queryset = queryset.filter(status=Post.Status.PUBLISHED)
-
-        # Фильтрация по категории
-        category_slug = self.request.query_params.get('category')
-        if category_slug:
-            queryset = queryset.filter(category__slug=category_slug)
 
         # Фильтрация по тегу
         tag_slug = self.request.query_params.get('tag')
@@ -76,7 +70,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Post.objects.select_related(
-            'author', 'category'
+            'author'
         ).prefetch_related('tags', 'likers').all()
 
     def get_serializer_class(self):
@@ -133,18 +127,10 @@ class LikedPostsListView(generics.ListAPIView):
 
     def get_queryset(self):
         return Post.objects.select_related(
-            'author', 'category'
+            'author'
         ).prefetch_related('tags').filter(
             likers__user=self.request.user
         ).order_by('-created_at').distinct()
-
-
-class CategoryListView(generics.ListAPIView):
-    """Список категорий."""
-
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
 
 
 class TagListView(generics.ListAPIView):

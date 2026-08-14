@@ -4,7 +4,6 @@ from .views import (
     PostDetailView,
     PostLikeView,
     LikedPostsListView,
-    CategoryListView,
     TagListView,
 )
 
@@ -16,9 +15,6 @@ urlpatterns = [
     path('posts/liked/', LikedPostsListView.as_view(), name='liked-posts'),
     path('posts/<slug:slug>/', PostDetailView.as_view(), name='post-detail'),
     path('posts/<slug:slug>/like/', PostLikeView.as_view(), name='post-like'),
-
-    # Категории
-    path('categories/', CategoryListView.as_view(), name='category-list'),
 
     # Теги
     path('tags/', TagListView.as_view(), name='tag-list'),

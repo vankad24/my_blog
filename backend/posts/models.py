@@ -4,26 +4,6 @@ from django.contrib.contenttypes.fields import GenericRelation
 from users.models import User
 
 
-class Category(models.Model):
-    """Категория для постов."""
-
-    name = models.CharField('Название', max_length=200, unique=True, db_index=True)
-    slug = models.SlugField('URL', max_length=250, unique=True, db_index=True)
-    created_at = models.DateTimeField('Создана', auto_now_add=True)
-
-    class Meta:
-        db_table = 'categories'
-        ordering = ['name']
-
-    def __str__(self) -> str:
-        return self.name
-
-    def save(self, *args, **kwargs) -> None:
-        if not self.slug:
-            self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
-
-
 class Tag(models.Model):
     """Тег для постов."""
 
@@ -55,21 +35,12 @@ class Post(models.Model):
     title = models.CharField('Заголовок', max_length=500, db_index=True)
     slug = models.SlugField('URL', max_length=500, unique=True, db_index=True)
     content = models.TextField('Содержание')
-    excerpt = models.TextField('Краткое описание', blank=True, default='')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='posts',
         db_column='user_id',
         verbose_name='Автор',
-    )
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='posts',
-        verbose_name='Категория',
     )
     status = models.CharField(
         'Статус',

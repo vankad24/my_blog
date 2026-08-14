@@ -87,13 +87,7 @@ function formatDate(dateStr) {
       <!-- Post Header -->
       <div class="p-8">
         <!-- Status badge -->
-        <div class="flex items-center space-x-2 mb-4">
-          <span
-            v-if="post.category"
-            class="inline-block bg-primary-50 text-primary-700 text-xs font-medium px-2.5 py-1 rounded-full"
-          >
-            {{ post.category.name }}
-          </span>
+        <div class="mb-4">
           <span
             v-if="post.status === 'draft'"
             class="inline-block bg-yellow-50 text-yellow-700 text-xs font-medium px-2.5 py-1 rounded-full"
@@ -101,7 +95,7 @@ function formatDate(dateStr) {
             Черновик
           </span>
           <span
-            v-if="post.status === 'moderation'"
+            v-else-if="post.status === 'moderation'"
             class="inline-block bg-orange-50 text-orange-700 text-xs font-medium px-2.5 py-1 rounded-full"
           >
             На модерации

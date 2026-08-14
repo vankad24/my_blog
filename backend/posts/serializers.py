@@ -1,16 +1,7 @@
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
-from .models import Category, Tag, Post, PostLike
+from .models import Tag, Post, PostLike
 from moderation.models import Moderation
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    """Сериализатор категории."""
-
-    class Meta:
-        model = Category
-        fields = ['id', 'name', 'slug', 'created_at']
-        read_only_fields = ['slug', 'created_at']
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -27,15 +18,14 @@ class PostListSerializer(serializers.ModelSerializer):
 
     author_login = serializers.CharField(source='author.login', read_only=True)
     author_name = serializers.CharField(source='author.name', read_only=True)
-    category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
     tags = TagSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'slug', 'excerpt', 'status',
-            'author_login', 'author_name', 'category_name',
+            'id', 'title', 'slug', 'status',
+            'author_login', 'author_name',
             'tags', 'views', 'likes_count',
             'published_at', 'created_at', 'is_liked',
         ]
@@ -51,7 +41,6 @@ class PostDetailSerializer(serializers.ModelSerializer):
     """Сериализатор для детального просмотра поста."""
 
     author = serializers.SerializerMethodField()
-    category = CategorySerializer(read_only=True, allow_null=True)
     tags = TagSerializer(many=True, read_only=True)
     is_liked = serializers.SerializerMethodField()
     is_liking = serializers.SerializerMethodField()
@@ -59,8 +48,8 @@ class PostDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'slug', 'content', 'excerpt',
-            'author', 'category', 'tags',
+            'id', 'title', 'slug', 'content',
+            'author', 'tags',
             'status', 'views', 'likes_count',
             'published_at', 'created_at', 'updated_at',
             'is_liked', 'is_liking',
@@ -99,8 +88,8 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'slug', 'content', 'excerpt',
-            'category', 'tags', 'published_at',
+            'id', 'title', 'slug', 'content',
+            'tags', 'published_at',
         ]
         read_only_fields = ['id', 'slug']
 
