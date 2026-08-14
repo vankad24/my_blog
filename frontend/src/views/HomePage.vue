@@ -70,10 +70,6 @@ async function handleLike(slug) {
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Блог</h1>
-      <p class="text-gray-600">Интересные статьи и заметки</p>
-    </div>
 
     <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
