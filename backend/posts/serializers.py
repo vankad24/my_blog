@@ -96,19 +96,22 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         tags = validated_data.pop('tags', [])
         user = self.context['request'].user
+        # Админ и модератор — пост публикуется сразу
+        is_moderator = user.role in ('moderator', 'admin')
         post = Post.objects.create(
             author=user,
-            status=Post.Status.MODERATION,
+            status=Post.Status.PUBLISHED if is_moderator else Post.Status.MODERATION,
             **validated_data,
         )
         post.tags.set(tags)
 
-        # Автоматически отправляем пост на модерацию
-        Moderation.objects.create(
-            content_type=ContentType.objects.get_for_model(Post),
-            object_id=post.pk,
-            status=Moderation.Status.PENDING,
-        )
+        # Только для обычных пользователей — создаём запись модерации
+        if not is_moderator:
+            Moderation.objects.create(
+                content_type=ContentType.objects.get_for_model(Post),
+                object_id=post.pk,
+                status=Moderation.Status.PENDING,
+            )
         return post
 
     def update(self, instance, validated_data):
