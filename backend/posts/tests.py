@@ -223,6 +223,18 @@ class PostAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Post.objects.count(), 2)
 
+    def test_create_post_without_title(self):
+        """Заголовок генерируется из первой непустой строки контента."""
+        token = self.get_token(self.author)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        data = {
+            'content': '\n\n<p>Первая строка</p>\n<p>Вторая строка</p>',
+        }
+        response = self.client.post('/api/posts/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.last()
+        self.assertEqual(post.title, '<p>Первая строка</p>')
+
     def test_update_own_post(self):
         """Обновление своего поста."""
         token = self.get_token(self.author)

@@ -7,7 +7,6 @@ const router = useRouter()
 const postsStore = usePostsStore()
 
 const form = ref({
-  title: '',
   content: '',
   tags: [],
 })
@@ -20,15 +19,14 @@ onMounted(() => {
 
 async function handleSubmit() {
   error.value = ''
-  if (!form.value.title.trim() || !form.value.content.trim()) {
-    error.value = 'Заголовок и содержание обязательны'
+  if (!form.value.content.trim()) {
+    error.value = 'Содержание обязательно'
     return
   }
 
   loading.value = true
   try {
     const data = {
-      title: form.value.title,
       content: form.value.content,
       tags: form.value.tags,
     }
@@ -56,17 +54,6 @@ async function handleSubmit() {
     </div>
 
     <form @submit.prevent="handleSubmit" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Заголовок</label>
-        <input
-          v-model="form.title"
-          type="text"
-          required
-          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-lg"
-          placeholder="Заголовок поста"
-        />
-      </div>
-
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Теги</label>
         <select

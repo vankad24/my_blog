@@ -83,6 +83,7 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
         many=True,
         required=False,
     )
+    title = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Post
@@ -94,6 +95,9 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         tags = validated_data.pop('tags', [])
+        # Если заголовок не передан — берём первую непустую строку контента
+        if not validated_data.get('title'):
+            validated_data['title'] = self.generate_title(validated_data.get('content', ''))
         user = self.context['request'].user
         # Админ и модератор — пост публикуется сразу
         is_moderator = user.role in ('moderator', 'admin')
@@ -112,6 +116,15 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
                 status=Moderation.Status.PENDING,
             )
         return post
+
+    @staticmethod
+    def generate_title(content: str) -> str:
+        """Первая непустая строка контента в качестве заголовка."""
+        for line in content.split('\n'):
+            line = line.strip()
+            if line:
+                return line[:500]
+        return 'Без заголовка'
 
     def update(self, instance, validated_data):
         tags = validated_data.pop('tags', None)
