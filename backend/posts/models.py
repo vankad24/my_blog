@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils.text import slugify
 from django.contrib.contenttypes.fields import GenericRelation
 from users.models import User
 
@@ -8,7 +7,6 @@ class Tag(models.Model):
     """Тег для постов."""
 
     name = models.CharField('Название', max_length=100, unique=True, db_index=True)
-    slug = models.SlugField('URL', max_length=150, unique=True, db_index=True)
     created_at = models.DateTimeField('Создан', auto_now_add=True)
 
     class Meta:
@@ -17,11 +15,6 @@ class Tag(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
-    def save(self, *args, **kwargs) -> None:
-        if not self.slug:
-            self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
 
 
 class Post(models.Model):
@@ -33,7 +26,6 @@ class Post(models.Model):
         MODERATION = 'moderation', 'На модерации'
 
     title = models.CharField('Заголовок', max_length=500, db_index=True)
-    slug = models.SlugField('URL', max_length=500, unique=True, db_index=True)
     content = models.TextField('Содержание')
     author = models.ForeignKey(
         User,
@@ -69,17 +61,6 @@ class Post(models.Model):
     def __str__(self) -> str:
         return self.title
 
-    def save(self, *args, **kwargs) -> None:
-        if not self.slug:
-            base_slug = slugify(self.title)
-            slug = base_slug
-            counter = 1
-            while Post.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                slug = f"{base_slug}-{counter}"
-                counter += 1
-            self.slug = slug
-        super().save(*args, **kwargs)
-
     @property
     def is_published(self) -> bool:
         return self.status == self.Status.PUBLISHED
@@ -109,4 +90,3 @@ class PostLike(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} liked {self.post}"
-

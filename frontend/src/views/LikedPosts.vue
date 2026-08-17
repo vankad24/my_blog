@@ -24,16 +24,16 @@ onMounted(async () => {
   }
 })
 
-async function handleLike(slug) {
-  const result = await postsStore.likePost(slug)
-  const post = posts.value.find(p => p.slug === slug)
+async function handleLike(id) {
+  const result = await postsStore.likePost(id)
+  const post = posts.value.find(p => p.id === id)
   if (post) {
     post.is_liked = result.liked
     post.likes_count = result.likes_count
   }
   // Если лайк снят — убираем из избранного
   if (!result.liked) {
-    posts.value = posts.value.filter(p => p.slug !== slug)
+    posts.value = posts.value.filter(p => p.id !== id)
   }
 }
 </script>

@@ -25,7 +25,7 @@ class ModerationSerializer(serializers.ModelSerializer):
             from posts.models import Post
             try:
                 post = Post.objects.get(pk=obj.object_id)
-                return {'type': 'post', 'title': post.title, 'slug': post.slug}
+                return {'type': 'post', 'title': post.title}
             except Post.DoesNotExist:
                 pass
         elif content_type == 'comment':

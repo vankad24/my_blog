@@ -23,8 +23,8 @@ export const usePostsStore = defineStore('posts', () => {
     return data
   }
 
-  async function fetchPost(slug) {
-    const { data } = await apiClient.get(`/posts/${slug}/`)
+  async function fetchPost(id) {
+    const { data } = await apiClient.get(`/posts/${id}/`)
     currentPost.value = data
     return data
   }
@@ -34,18 +34,18 @@ export const usePostsStore = defineStore('posts', () => {
     return data
   }
 
-  async function updatePost(slug, postData) {
-    const { data } = await apiClient.put(`/posts/${slug}/`, postData)
+  async function updatePost(id, postData) {
+    const { data } = await apiClient.put(`/posts/${id}/`, postData)
     currentPost.value = data
     return data
   }
 
-  async function deletePost(slug) {
-    await apiClient.delete(`/posts/${slug}/`)
+  async function deletePost(id) {
+    await apiClient.delete(`/posts/${id}/`)
   }
 
-  async function likePost(slug) {
-    const { data } = await apiClient.post(`/posts/${slug}/like/`)
+  async function likePost(id) {
+    const { data } = await apiClient.post(`/posts/${id}/like/`)
     return data
   }
 
@@ -60,9 +60,9 @@ export const usePostsStore = defineStore('posts', () => {
     return tags.value
   }
 
-  async function fetchComments(postSlug) {
+  async function fetchComments(postId) {
     const { data } = await apiClient.get('/comments/', {
-      params: { content_type: 'posts.post', object_id: postSlug },
+      params: { content_type: 'posts.post', object_id: postId },
     })
     return data.results || data
   }

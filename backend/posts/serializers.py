@@ -9,8 +9,8 @@ class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ['id', 'name', 'slug', 'created_at']
-        read_only_fields = ['slug', 'created_at']
+        fields = ['id', 'name', 'created_at']
+        read_only_fields = ['created_at']
 
 
 class PostListSerializer(serializers.ModelSerializer):
@@ -24,7 +24,7 @@ class PostListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'slug', 'status',
+            'id', 'title', 'status',
             'author_login', 'author_name',
             'tags', 'views', 'likes_count',
             'published_at', 'created_at', 'is_liked',
@@ -48,7 +48,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'slug', 'content',
+            'id', 'title', 'content',
             'author', 'tags',
             'status', 'views', 'likes_count',
             'published_at', 'created_at', 'updated_at',
@@ -78,20 +78,19 @@ class PostDetailSerializer(serializers.ModelSerializer):
 class PostCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания/обновления поста."""
 
-    tags = serializers.SlugRelatedField(
+    tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True,
-        slug_field='slug',
         required=False,
     )
 
     class Meta:
         model = Post
         fields = [
-            'id', 'title', 'slug', 'content',
+            'id', 'title', 'content',
             'tags', 'published_at',
         ]
-        read_only_fields = ['id', 'slug']
+        read_only_fields = ['id']
 
     def create(self, validated_data):
         tags = validated_data.pop('tags', [])

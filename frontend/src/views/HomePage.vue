@@ -52,14 +52,14 @@ function handlePageChange(page) {
   currentPage.value = page
 }
 
-async function handleLike(slug) {
+async function handleLike(id) {
   if (!authStore.isAuthenticated) {
     router.push('/login')
     return
   }
-  const result = await postsStore.likePost(slug)
+  const result = await postsStore.likePost(id)
   // Обновляем пост в списке
-  const post = postsStore.posts.find(p => p.slug === slug)
+  const post = postsStore.posts.find(p => p.id === id)
   if (post) {
     post.is_liked = result.liked
     post.likes_count = result.likes_count
@@ -92,8 +92,8 @@ async function handleLike(slug) {
           <option value="">Все теги</option>
           <option
             v-for="tag in postsStore.tags"
-            :key="tag.slug"
-            :value="tag.slug"
+            :key="tag.id"
+            :value="tag.id"
           >
             #{{ tag.name }}
           </option>

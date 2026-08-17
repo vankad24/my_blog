@@ -8,7 +8,7 @@ const routes = [
     component: () => import('@/views/HomePage.vue'),
   },
   {
-    path: '/post/:slug',
+    path: '/post/:id',
     name: 'PostDetail',
     component: () => import('@/views/PostDetail.vue'),
   },
@@ -34,7 +34,7 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/edit/:slug',
+    path: '/edit/:id',
     name: 'EditPost',
     component: () => import('@/views/EditPost.vue'),
     meta: { requiresAuth: true },

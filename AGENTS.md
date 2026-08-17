@@ -31,9 +31,8 @@ backend/
 | Модель | Поля | Примечание |
 |--------|------|------------|
 | User | login, email, name, role, email_verified_at | login вместо username, role (user/moderator/admin) |
-| Category | name, slug | |
-| Tag | name, slug | |
-| Post | title, slug, content, excerpt, author, category, status, views, likes_count, published_at, deleted_at | Мягкое удаление через deleted_at. Status: draft/published/moderation |
+| Tag | name | |
+| Post | title, content, author, status, views, likes_count, published_at, deleted_at | Мягкое удаление через deleted_at. Status: draft/published/moderation |
 | Comment | body, author, content_type, object_id, parent, deleted_at | Полиморфный (к постам). Reply через parent |
 | Moderation | content_type, object_id, status, comment, moderator | Полиморфный (к постам и комментариям). Status: pending/accepted/declined |
 | PostLike | user, post, created_at | Unique: (user, post) |
@@ -44,13 +43,12 @@ backend/
 - `auth/email/verify/`, `auth/email/resend/`
 - `me/`, `me/update/`, `me/password/`
 - `users/<login>/` — публичный профиль
-- `posts/`, `posts/<slug>/`, `posts/<slug>/like/`, `posts/liked/`
+- `posts/`, `posts/<pk>/`, `posts/<pk>/like/`, `posts/liked/`
 - `categories/`, `tags/`
 - `comments/`, `comments/<pk>/`
 - `moderation/`, `moderation/<pk>/accept/`, `moderation/<pk>/decline/`
 
 #### Особенности
-- Slug генерируется автоматически из title при сохранении поста
 - Мягкое удаление: Post и Comment помечаются deleted_at, но не удаляются физически
 - GenericRelation на Post: `post.comments`, `post.moderations`
 - GenericRelation на Comment: `comment.moderations`
@@ -140,7 +138,7 @@ npm run preview                               # Превью сборки
 ## Известные особенности
 1. **Rich Text Editor** — пока не реализован, контент вводится как HTML в `<textarea>`
 2. **Email** — в разработке отправка выключена, токены возвращаются в ответе (DEBUG mode)
-3. **Slug** — генерируется из названия, при дубликате добавляется `-1`, `-2` и т.д.
+3. **Ссылки на посты** — по id: `/post/<id>`, что позволяет создавать посты с одинаковыми заголовками
 4. **JWT** — access 60 мин, refresh 7 дней, с blacklist при logout
 5. **CORS** — настроен на `localhost:5173` и `localhost:3000`
 6. **auto-init** — `authStore.init()` вызывается в `main.js` при загрузке приложения

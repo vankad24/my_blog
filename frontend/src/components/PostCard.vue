@@ -29,7 +29,7 @@ function formatDate(dateStr) {
 
 function handleLike() {
   if (authStore.isAuthenticated) {
-    emit('like', props.post.slug)
+    emit('like', props.post.id)
   }
 }
 </script>
@@ -54,7 +54,7 @@ function handleLike() {
       </div>
 
       <!-- Title -->
-      <router-link :to="{ name: 'PostDetail', params: { slug: post.slug } }">
+      <router-link :to="{ name: 'PostDetail', params: { id: post.id } }">
         <h2 class="text-xl font-bold text-gray-900 mb-2 hover:text-primary-600 transition-colors">
           {{ post.title }}
         </h2>
@@ -64,7 +64,7 @@ function handleLike() {
       <div v-if="post.tags?.length" class="flex flex-wrap gap-1.5 mb-4">
         <span
           v-for="tag in post.tags"
-          :key="tag.slug"
+          :key="tag.id"
           class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded"
         >
           #{{ tag.name }}

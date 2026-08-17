@@ -18,7 +18,7 @@ const error = ref('')
 
 onMounted(async () => {
   try {
-    await postsStore.fetchPost(route.params.slug)
+    await postsStore.fetchPost(route.params.id)
     const post = postsStore.currentPost
     if (!post) {
       router.push('/')
@@ -27,7 +27,7 @@ onMounted(async () => {
     form.value = {
       title: post.title,
       content: post.content,
-      tags: post.tags?.map(t => t.slug) || [],
+      tags: post.tags?.map(t => t.id) || [],
     }
     postsStore.fetchTags()
   } catch {
@@ -51,8 +51,8 @@ async function handleSubmit() {
       content: form.value.content,
       tags: form.value.tags,
     }
-    const post = await postsStore.updatePost(route.params.slug, data)
-    router.push({ name: 'PostDetail', params: { slug: post.slug } })
+    const post = await postsStore.updatePost(route.params.id, data)
+    router.push({ name: 'PostDetail', params: { id: post.id } })
   } catch (err) {
     if (err.response?.data) {
       error.value = Object.values(err.response.data).flat().join('; ')
@@ -100,7 +100,7 @@ async function handleSubmit() {
           <option
             v-for="tag in postsStore.tags"
             :key="tag.id"
-            :value="tag.slug"
+            :value="tag.id"
           >
             #{{ tag.name }}
           </option>
@@ -119,7 +119,7 @@ async function handleSubmit() {
 
         <div class="flex justify-end space-x-2">
           <router-link
-            :to="{ name: 'PostDetail', params: { slug: route.params.slug } }"
+            :to="{ name: 'PostDetail', params: { id: route.params.id } }"
             class="text-gray-600 border border-gray-300 px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors font-medium"
           >
             Отмена

@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
-  postSlug: {
-    type: String,
+  postId: {
+    type: Number,
     required: true,
   },
 })
@@ -21,7 +21,7 @@ async function handleSubmit() {
     emit('submitted', {
       body: body.value,
       content_type_str: 'posts.post',
-      object_id: props.postSlug,
+      object_id: props.postId,
     })
     body.value = ''
   } finally {

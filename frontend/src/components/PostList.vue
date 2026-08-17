@@ -33,7 +33,7 @@ const emit = defineEmits(['like', 'page-change'])
       v-for="post in posts"
       :key="post.id"
       :post="post"
-      @like="(slug) => emit('like', slug)"
+      @like="(id) => emit('like', id)"
     />
   </div>
 </template>

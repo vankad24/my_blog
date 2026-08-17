@@ -11,7 +11,6 @@ class TagModelTest(TestCase):
     def test_create_tag(self):
         tag = Tag.objects.create(name='python')
         self.assertEqual(tag.name, 'python')
-        self.assertEqual(tag.slug, 'python')
 
     def test_tag_unique_name(self):
         Tag.objects.create(name='django')
@@ -39,19 +38,14 @@ class PostModelTest(TestCase):
         self.assertEqual(post.status, Post.Status.PUBLISHED)
         self.assertEqual(str(post), 'Test Post')
 
-    def test_post_slug_generation(self):
-        post = Post(title='My Great Post', content='Hello', author=self.author)
-        post.save()
-        self.assertEqual(post.slug, 'my-great-post')
-
-    def test_post_slug_uniqueness(self):
+    def test_posts_with_same_title(self):
+        """Посты с одинаковым заголовком допустимы (ссылки по id)."""
         post1 = Post(title='Same Title', content='C1', author=self.author)
         post1.save()
         post2 = Post(title='Same Title', content='C2', author=self.author)
         post2.save()
-        # Второй пост должен получить уникальный slug
-        self.assertNotEqual(post1.slug, post2.slug)
-        self.assertIn('-1', post2.slug)
+        self.assertEqual(post1.title, post2.title)
+        self.assertNotEqual(post1.pk, post2.pk)
 
     def test_post_tags(self):
         post = Post.objects.create(
@@ -191,7 +185,7 @@ class PostAPITest(APITestCase):
 
     def test_list_posts_filter_by_tag(self):
         """Фильтрация по тегу."""
-        response = self.client.get('/api/posts/?tag=python')
+        response = self.client.get(f'/api/posts/?tag={self.tag.pk}')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
 
@@ -203,7 +197,7 @@ class PostAPITest(APITestCase):
 
     def test_get_post_detail(self):
         """Детальный просмотр поста."""
-        response = self.client.get(f'/api/posts/{self.post.slug}/')
+        response = self.client.get(f'/api/posts/{self.post.pk}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], 'Published Post')
         self.assertEqual(len(response.data['tags']), 1)
@@ -234,7 +228,7 @@ class PostAPITest(APITestCase):
         token = self.get_token(self.author)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
         data = {'title': 'Updated Title', 'content': 'Updated content'}
-        response = self.client.put(f'/api/posts/{self.post.slug}/', data, format='json')
+        response = self.client.put(f'/api/posts/{self.post.pk}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.post.refresh_from_db()
         self.assertEqual(self.post.title, 'Updated Title')
@@ -243,7 +237,7 @@ class PostAPITest(APITestCase):
         """Удаление своего поста (мягкое)."""
         token = self.get_token(self.author)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-        response = self.client.delete(f'/api/posts/{self.post.slug}/')
+        response = self.client.delete(f'/api/posts/{self.post.pk}/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.post.refresh_from_db()
         self.assertIsNotNone(self.post.deleted_at)
@@ -252,7 +246,7 @@ class PostAPITest(APITestCase):
         """Лайк поста."""
         token = self.get_token(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-        response = self.client.post(f'/api/posts/{self.post.slug}/like/')
+        response = self.client.post(f'/api/posts/{self.post.pk}/like/')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(response.data['liked'])
 
@@ -262,11 +256,11 @@ class PostAPITest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
         # Первый лайк
-        response = self.client.post(f'/api/posts/{self.post.slug}/like/')
+        response = self.client.post(f'/api/posts/{self.post.pk}/like/')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Отмена лайка
-        response = self.client.post(f'/api/posts/{self.post.slug}/like/')
+        response = self.client.post(f'/api/posts/{self.post.pk}/like/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data['liked'])
 
@@ -275,7 +269,7 @@ class PostAPITest(APITestCase):
         token = self.get_token(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
-        self.client.post(f'/api/posts/{self.post.slug}/like/')
+        self.client.post(f'/api/posts/{self.post.pk}/like/')
         response = self.client.get('/api/posts/liked/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
@@ -293,10 +287,9 @@ class PostAPITest(APITestCase):
         data = {
             'title': 'Post with tags',
             'content': 'Content',
-            'tags': ['python'],
+            'tags': [self.tag.pk],
         }
         response = self.client.post('/api/posts/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         post = Post.objects.last()
         self.assertEqual(post.tags.count(), 1)
-

@@ -22,7 +22,7 @@ const isAuthor = computed(() => {
 
 onMounted(async () => {
   try {
-    await postsStore.fetchPost(route.params.slug)
+    await postsStore.fetchPost(route.params.id)
     post.value = postsStore.currentPost
     liked.value = post.value.is_liked || false
     await loadComments()
@@ -45,14 +45,14 @@ async function handleLike() {
     router.push('/login')
     return
   }
-  const result = await postsStore.likePost(post.value.slug)
+  const result = await postsStore.likePost(post.value.id)
   post.value.likes_count = result.likes_count
   liked.value = result.liked
 }
 
 async function handleDelete() {
   if (!confirm('Удалить пост?')) return
-  await postsStore.deletePost(post.value.slug)
+  await postsStore.deletePost(post.value.id)
   router.push('/')
 }
 
@@ -148,7 +148,7 @@ function formatDate(dateStr) {
 
             <router-link
               v-if="isAuthor"
-              :to="{ name: 'EditPost', params: { slug: post.slug } }"
+              :to="{ name: 'EditPost', params: { id: post.id } }"
               class="text-gray-500 hover:text-primary-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-sm"
             >
               Редактировать
@@ -167,7 +167,7 @@ function formatDate(dateStr) {
         <div v-if="post.tags?.length" class="flex flex-wrap gap-2 mb-6">
           <span
             v-for="tag in post.tags"
-            :key="tag.slug"
+            :key="tag.id"
             class="text-sm text-gray-500 bg-gray-100 px-2.5 py-1 rounded"
           >
             #{{ tag.name }}
@@ -185,7 +185,7 @@ function formatDate(dateStr) {
           <span v-if="comments.length" class="text-gray-500 text-base font-normal">({{ comments.length }})</span>
         </h2>
 
-        <CommentForm :post-slug="post.slug" @submitted="handleComment" />
+        <CommentForm :post-id="post.id" @submitted="handleComment" />
 
         <div class="mt-6 space-y-4">
           <div v-for="comment in comments" :key="comment.id" class="bg-gray-50 rounded-lg p-4">

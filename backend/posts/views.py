@@ -34,9 +34,9 @@ class PostListView(generics.ListCreateAPIView):
             queryset = queryset.filter(status=Post.Status.PUBLISHED)
 
         # Фильтрация по тегу
-        tag_slug = self.request.query_params.get('tag')
-        if tag_slug:
-            queryset = queryset.filter(tags__slug=tag_slug)
+        tag_id = self.request.query_params.get('tag')
+        if tag_id:
+            queryset = queryset.filter(tags__id=tag_id)
 
         # Поиск по заголовку
         search = self.request.query_params.get('search')
@@ -60,8 +60,6 @@ class PostListView(generics.ListCreateAPIView):
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Детальный просмотр, обновление и удаление поста."""
-
-    lookup_field = 'slug'
 
     def get_permissions(self):
         if self.request.method in ['PUT', 'PATCH', 'DELETE']:
@@ -90,9 +88,9 @@ class PostLikeView(generics.GenericAPIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, slug):
+    def post(self, request, pk):
         try:
-            post = Post.objects.get(slug=slug)
+            post = Post.objects.get(pk=pk)
         except Post.DoesNotExist:
             return Response(
                 {'error': 'Пост не найден'},
@@ -139,4 +137,3 @@ class TagListView(generics.ListAPIView):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [permissions.AllowAny]
-

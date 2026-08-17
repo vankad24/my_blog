@@ -33,7 +33,7 @@ async function handleSubmit() {
       tags: form.value.tags,
     }
     const post = await postsStore.createPost(data)
-    router.push({ name: 'PostDetail', params: { slug: post.slug } })
+    router.push({ name: 'PostDetail', params: { id: post.id } })
   } catch (err) {
     console.error('[CreatePost] Ошибка создания поста:', err)
     if (err.response?.data) {
@@ -77,7 +77,7 @@ async function handleSubmit() {
           <option
             v-for="tag in postsStore.tags"
             :key="tag.id"
-            :value="tag.slug"
+            :value="tag.id"
           >
             #{{ tag.name }}
           </option>
