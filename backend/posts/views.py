@@ -44,7 +44,7 @@ class PostListView(generics.ListCreateAPIView):
             queryset = queryset.filter(title__icontains=search)
 
         # Сортировка
-        ordering = self.request.query_params.get('ordering', '-published_at')
+        ordering = self.request.query_params.get('ordering', '-id')
         queryset = queryset.order_by(ordering)
 
         return queryset
