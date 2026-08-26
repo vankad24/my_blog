@@ -33,6 +33,7 @@ onMounted(() => {
     value: content.value || '',
     mode: props.mode,
     height: props.height,
+    lang: 'ru_RU',
     placeholder: props.placeholder,
     cache: {
       enable: true,
