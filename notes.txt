@@ -1,0 +1,8 @@
+cd frontend
+npm run dev
+
+cd backend
+.\venv\Scripts\python manage.py runserver
+
+
+http://127.0.0.1:5173/
