@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import MarkdownPreview from '@/components/MarkdownPreview.vue'
 
 const props = defineProps({
   post: {
@@ -53,11 +54,9 @@ function handleLike() {
         </span>
       </div>
 
-      <!-- Title -->
-      <router-link :to="{ name: 'PostDetail', params: { id: post.id } }">
-        <h2 class="text-xl font-bold text-gray-900 mb-2 hover:text-primary-600 transition-colors">
-          {{ post.title }}
-        </h2>
+      <!-- Content preview -->
+      <router-link :to="{ name: 'PostDetail', params: { id: post.id } }" class="block mb-4">
+        <MarkdownPreview :markdown="post.content" />
       </router-link>
 
       <!-- Tags -->

@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import MarkdownEditor from '@/components/MarkdownEditor.vue'
 
 const props = defineProps({
   postId: {
@@ -13,6 +14,7 @@ const emit = defineEmits(['submitted'])
 const authStore = useAuthStore()
 const body = ref('')
 const submitting = ref(false)
+const editorRef = ref(null)
 
 async function handleSubmit() {
   if (!body.value.trim()) return
@@ -23,6 +25,7 @@ async function handleSubmit() {
       content_type_str: 'posts.post',
       object_id: props.postId,
     })
+    editorRef.value?.clear()
     body.value = ''
   } finally {
     submitting.value = false
@@ -33,13 +36,13 @@ async function handleSubmit() {
 <template>
   <div v-if="authStore.isAuthenticated" class="mt-6">
     <form @submit.prevent="handleSubmit">
-      <textarea
+      <MarkdownEditor
+        ref="editorRef"
         v-model="body"
-        rows="3"
-        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-        placeholder="Напишите комментарий..."
-        required
-      ></textarea>
+        :cache-id="`comment-${postId}`"
+        :height="'200px'"
+        placeholder="Напишите комментарий в Markdown..."
+      />
       <div class="flex justify-end mt-2">
         <button
           type="submit"

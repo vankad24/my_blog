@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
+import MarkdownEditor from '@/components/MarkdownEditor.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -109,12 +110,11 @@ async function handleSubmit() {
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Содержание</label>
-          <textarea
+          <MarkdownEditor
             v-model="form.content"
-            rows="15"
-            required
-            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
-          ></textarea>
+            :cache-id="`post-${route.params.id}`"
+            placeholder="Напишите пост в Markdown..."
+          />
         </div>
 
         <div class="flex justify-end space-x-2">

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import CommentForm from '@/components/CommentForm.vue'
+import MarkdownPreview from '@/components/MarkdownPreview.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -175,7 +176,9 @@ function formatDate(dateStr) {
         </div>
 
         <!-- Content -->
-        <div class="prose-content" v-html="post.content"></div>
+        <div class="prose-content">
+          <MarkdownPreview :markdown="post.content" />
+        </div>
       </div>
 
       <!-- Comments Section -->
@@ -193,7 +196,9 @@ function formatDate(dateStr) {
               <span class="font-medium text-gray-900">{{ comment.author_name || comment.author_login }}</span>
               <span>{{ formatDate(comment.created_at) }}</span>
             </div>
-            <p class="text-gray-700">{{ comment.body }}</p>
+            <div class="text-gray-700">
+              <MarkdownPreview :markdown="comment.body" />
+            </div>
 
             <!-- Replies -->
             <div v-if="comment.replies?.length" class="ml-6 mt-4 space-y-3">
@@ -202,7 +207,9 @@ function formatDate(dateStr) {
                   <span class="font-medium text-gray-900">{{ reply.author_name || reply.author_login }}</span>
                   <span>{{ formatDate(reply.created_at) }}</span>
                 </div>
-                <p class="text-gray-700">{{ reply.body }}</p>
+                <div class="text-gray-700">
+                  <MarkdownPreview :markdown="reply.body" />
+                </div>
               </div>
             </div>
           </div>
