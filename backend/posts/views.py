@@ -1,4 +1,4 @@
-from rest_framework import status, permissions, generics, filters
+from rest_framework import status, permissions, generics, filters, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.utils import timezone
@@ -131,9 +131,20 @@ class LikedPostsListView(generics.ListAPIView):
         ).order_by('-created_at').distinct()
 
 
-class TagListView(generics.ListAPIView):
-    """Список тегов."""
+class TagListView(generics.ListCreateAPIView):
+    """Список и создание тегов."""
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return TagSerializer
+        return TagSerializer
+
+    def perform_create(self, serializer):
+        name = serializer.validated_data['name'].strip()
+        if Tag.objects.filter(name__iexact=name).exists():
+            raise serializers.ValidationError('Тег с таким названием уже существует')
+        serializer.save()

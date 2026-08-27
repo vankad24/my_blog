@@ -60,6 +60,12 @@ export const usePostsStore = defineStore('posts', () => {
     return tags.value
   }
 
+  async function createTag(name) {
+    const { data } = await apiClient.post('/tags/', { name })
+    tags.value.push(data)
+    return data
+  }
+
   async function fetchComments(postId) {
     const { data } = await apiClient.get('/comments/', {
       params: { content_type: 'posts.post', object_id: postId },
@@ -85,6 +91,7 @@ export const usePostsStore = defineStore('posts', () => {
     likePost,
     fetchLikedPosts,
     fetchTags,
+    createTag,
     fetchComments,
     createComment,
   }
