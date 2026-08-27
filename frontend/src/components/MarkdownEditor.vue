@@ -58,11 +58,21 @@ onMounted(() => {
       'inline-code',
       'link',
       'table',
+      'upload',
       '|',
       'emoji',
       'preview',
       'fullscreen',
     ],
+    upload: {
+      accept: 'image/*',
+      multiple: true,
+      fieldName: 'file',
+      url: '/api/upload/image/',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    },
     input(value) {
       content.value = value
     },

@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'posts',
     'comments',
     'moderation',
+    'upload',
 ]
 
 MIDDLEWARE = [
@@ -102,6 +103,10 @@ USE_TZ = True
 # Static files
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media files (user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR.parent / 'media'
 
 
 # Default primary key field type
