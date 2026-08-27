@@ -65,13 +65,14 @@ onMounted(() => {
       'fullscreen',
     ],
     upload: {
-      accept: 'image/*',
+      accept: 'image/*,video/*,audio/*,.pdf,.zip,.doc,.docx,.txt,.csv,.rar,.7z,.gz,.tar',
       multiple: true,
       fieldName: 'file',
       url: '/api/upload/image/',
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
       },
+      max: 200 * 1024 * 1024,  // 200MB
     },
     input(value) {
       content.value = value
