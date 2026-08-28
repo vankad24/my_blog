@@ -1,8 +1,12 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import TagChip from '@/components/TagChip.vue'
+
+// Количество строк превью перед сворачиванием
+const PREVIEW_LINES = 8
+const LINE_HEIGHT = 24 // px, стандартный line-height для body
 
 const props = defineProps({
   post: {
@@ -13,11 +17,17 @@ const props = defineProps({
 
 const emit = defineEmits(['like'])
 const authStore = useAuthStore()
+const expanded = ref(false)
 
 const authorName = computed(() => props.post.author_name || props.post.author?.name || props.post.author_login)
 const authorLogin = computed(() => props.post.author_login || props.post.author?.login)
 const isLiked = computed(() => props.post.is_liked)
 const likesCount = computed(() => props.post.likes_count)
+
+const contentMaxHeight = computed(() => {
+  if (expanded.value) return 'none'
+  return `${PREVIEW_LINES * LINE_HEIGHT}px`
+})
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -33,6 +43,10 @@ function handleLike() {
   if (authStore.isAuthenticated) {
     emit('like', props.post.id)
   }
+}
+
+function toggleExpand() {
+  expanded.value = !expanded.value
 }
 </script>
 
@@ -56,9 +70,44 @@ function handleLike() {
       </div>
 
       <!-- Content preview -->
-      <router-link :to="{ name: 'PostDetail', params: { id: post.id } }" class="block mb-4">
-        <MarkdownPreview :markdown="post.content" />
-      </router-link>
+      <div class="mb-4">
+        <!-- Visible preview -->
+        <div
+          v-if="!expanded"
+          class="overflow-hidden relative"
+          :style="{ maxHeight: contentMaxHeight }"
+        >
+          <router-link :to="{ name: 'PostDetail', params: { id: post.id } }" class="block">
+            <MarkdownPreview :markdown="post.content" />
+          </router-link>
+          <!-- Gradient overlay -->
+          <div
+            class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"
+          ></div>
+        </div>
+
+        <!-- Full content -->
+        <div v-if="expanded">
+          <MarkdownPreview :markdown="post.content" />
+        </div>
+
+        <!-- Toggle button -->
+        <button
+          @click="toggleExpand"
+          class="text-primary-600 hover:text-primary-700 text-sm font-medium mt-2 inline-flex items-center gap-1 transition-colors"
+        >
+          <span>{{ expanded ? 'Свернуть' : 'Развернуть' }}</span>
+          <svg
+            class="w-4 h-4 transition-transform"
+            :class="{ 'rotate-180': expanded }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
 
       <!-- Tags -->
       <div v-if="post.tags?.length" class="flex flex-wrap gap-2 mb-4">
