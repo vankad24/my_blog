@@ -18,16 +18,43 @@ const props = defineProps({
 const emit = defineEmits(['like'])
 const authStore = useAuthStore()
 const expanded = ref(false)
+const copied = ref(false)
+const shareTooltip = ref(false)
+const showCopied = ref(false)
 
 const authorName = computed(() => props.post.author_name || props.post.author?.name || props.post.author_login)
 const authorLogin = computed(() => props.post.author_login || props.post.author?.login)
 const isLiked = computed(() => props.post.is_liked)
 const likesCount = computed(() => props.post.likes_count)
 
+const postUrl = computed(() => window.location.origin + `/post/${props.post.id}`)
+
 const contentMaxHeight = computed(() => {
   if (expanded.value) return 'none'
   return `${PREVIEW_LINES * LINE_HEIGHT}px`
 })
+
+function toggleExpand() {
+  expanded.value = !expanded.value
+}
+
+async function sharePost() {
+  try {
+    await navigator.clipboard.writeText(postUrl.value)
+  } catch {
+    const input = document.createElement('input')
+    input.value = postUrl.value
+    document.body.appendChild(input)
+    input.select()
+    document.execCommand('copy')
+    document.body.removeChild(input)
+  }
+  showCopied.value = true
+  shareTooltip.value = false
+  setTimeout(() => {
+    showCopied.value = false
+  }, 2000)
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -43,10 +70,6 @@ function handleLike() {
   if (authStore.isAuthenticated) {
     emit('like', props.post.id)
   }
-}
-
-function toggleExpand() {
-  expanded.value = !expanded.value
 }
 </script>
 
@@ -77,9 +100,7 @@ function toggleExpand() {
           class="overflow-hidden relative"
           :style="{ maxHeight: contentMaxHeight }"
         >
-          <router-link :to="{ name: 'PostDetail', params: { id: post.id } }" class="block">
-            <MarkdownPreview :markdown="post.content" />
-          </router-link>
+          <MarkdownPreview :markdown="post.content" />
           <!-- Gradient overlay -->
           <div
             class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"
@@ -130,34 +151,69 @@ function toggleExpand() {
           </router-link>
           <span>{{ formatDate(post.published_at || post.created_at) }}</span>
         </div>
-        <div class="flex items-center space-x-3">
-          <span class="flex items-center space-x-1">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <span>{{ post.views || 0 }}</span>
-          </span>
-          <button
-            @click="handleLike"
-            class="flex items-center space-x-1 transition-colors"
-            :class="isLiked ? 'text-red-500' : 'hover:text-red-500'"
-          >
-            <svg
-              class="w-4 h-4"
-              :fill="isLiked ? 'currentColor' : 'none'"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <div class="flex items-center space-x-4">
+          <!-- Views -->
+          <div class="relative group">
+            <span class="flex items-center space-x-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>{{ post.views || 0 }}</span>
+            </span>
+            <span class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              Просмотры
+            </span>
+          </div>
+
+          <!-- Like -->
+          <div class="relative group">
+            <button
+              @click="handleLike"
+              class="flex items-center space-x-1 transition-colors"
+              :class="isLiked ? 'text-red-500' : 'hover:text-red-500'"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
-            <span>{{ likesCount || 0 }}</span>
-          </button>
+              <svg
+                class="w-4 h-4"
+                :fill="isLiked ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+              <span>{{ likesCount || 0 }}</span>
+            </button>
+            <span class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              Нравится
+            </span>
+          </div>
+
+          <!-- Share -->
+          <div class="relative group flex">
+            <button
+              @click="sharePost"
+              class="text-gray-500 hover:text-primary-600 transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+            <span class="absolute -top-8 right-0 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              Поделиться
+            </span>
+            <!-- Copied tooltip -->
+            <span
+              v-show="showCopied"
+              class="absolute -top-8 right-0 px-2 py-1 bg-primary-600 text-white text-xs rounded whitespace-nowrap"
+            >
+              Скопировано!
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ const loading = ref(true)
 const comments = ref([])
 const liked = ref(false)
 const post = ref(null)
+const showCopied = ref(false)
 
 const isAuthor = computed(() => {
   if (!authStore.user || !post.value) return false
@@ -74,6 +75,21 @@ function formatDate(dateStr) {
     minute: '2-digit',
   })
 }
+
+async function sharePost() {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+  } catch {
+    const input = document.createElement('input')
+    input.value = window.location.href
+    document.body.appendChild(input)
+    input.select()
+    document.execCommand('copy')
+    document.body.removeChild(input)
+  }
+  showCopied.value = true
+  setTimeout(() => { showCopied.value = false }, 2000)
+}
 </script>
 
 <template>
@@ -128,7 +144,7 @@ function formatDate(dateStr) {
           <div class="flex items-center space-x-2">
             <button
               @click="handleLike"
-              class="flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-colors"
+              class="flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-colors relative group"
               :class="liked ? 'bg-red-50 text-red-500' : 'hover:bg-gray-100'"
             >
               <svg
@@ -145,6 +161,9 @@ function formatDate(dateStr) {
                 />
               </svg>
               <span>{{ post.likes_count || 0 }}</span>
+              <span class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                Лайк
+              </span>
             </button>
 
             <router-link
@@ -161,6 +180,27 @@ function formatDate(dateStr) {
             >
               Удалить
             </button>
+
+            <!-- Share -->
+            <div class="relative group">
+              <button
+                @click="sharePost"
+                class="text-gray-500 hover:text-primary-600 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              </button>
+              <span class="absolute -top-8 right-0 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                Поделиться
+              </span>
+              <span
+                v-show="showCopied"
+                class="absolute -top-8 right-0 px-2 py-1 bg-primary-600 text-white text-xs rounded whitespace-nowrap"
+              >
+                Скопировано!
+              </span>
+            </div>
           </div>
         </div>
 
