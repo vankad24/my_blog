@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
@@ -25,7 +25,10 @@ onMounted(() => {
   postsStore.fetchTags()
 })
 
+let isExternalUpdate = false
+
 watch([currentPage, searchQuery, selectedTag], () => {
+  if (isExternalUpdate) return
   router.replace({
     query: {
       page: currentPage.value > 1 ? currentPage.value : undefined,
@@ -44,10 +47,12 @@ watch(
     tag: route.query.tag,
   }),
   () => {
+    isExternalUpdate = true
     currentPage.value = parseInt(route.query.page) || 1
     searchQuery.value = route.query.search || ''
     selectedTag.value = route.query.tag || ''
     loadPosts()
+    nextTick(() => { isExternalUpdate = false })
   }
 )
 
