@@ -38,10 +38,10 @@ class PostListView(generics.ListCreateAPIView):
         if tag_id:
             queryset = queryset.filter(tags__id=tag_id)
 
-        # Поиск по заголовку
+        # Поиск по содержанию
         search = self.request.query_params.get('search')
         if search:
-            queryset = queryset.filter(title__icontains=search)
+            queryset = queryset.filter(content__icontains=search)
 
         # Сортировка
         ordering = self.request.query_params.get('ordering', '-id')

@@ -100,7 +100,7 @@ async function handleLike(id) {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Поиск по заголовкам..."
+            placeholder="Поиск по содержанию..."
             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
