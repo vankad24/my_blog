@@ -41,7 +41,7 @@ async function handleSubmit() {
         v-model="body"
         :cache-id="`comment-${postId}`"
         :height="'200px'"
-        placeholder="Напишите комментарий в Markdown..."
+        placeholder="Напишите Markdown текст..."
       />
       <div class="flex justify-end mt-2">
         <button

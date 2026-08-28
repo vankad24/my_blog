@@ -23,7 +23,7 @@ function handleLogout() {
       <div class="flex justify-between items-center h-16">
         <!-- Logo -->
         <router-link to="/" class="flex items-center space-x-2">
-          <span class="text-2xl font-bold text-primary-600">MyBlog</span>
+          <span class="text-2xl font-bold text-primary-600">Блог молочка🥛</span>
         </router-link>
 
         <!-- Navigation -->
