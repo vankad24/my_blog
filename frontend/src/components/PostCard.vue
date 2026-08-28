@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
+import TagChip from '@/components/TagChip.vue'
 
 const props = defineProps({
   post: {
@@ -60,14 +61,13 @@ function handleLike() {
       </router-link>
 
       <!-- Tags -->
-      <div v-if="post.tags?.length" class="flex flex-wrap gap-1.5 mb-4">
-        <span
+      <div v-if="post.tags?.length" class="flex flex-wrap gap-2 mb-4">
+        <TagChip
           v-for="tag in post.tags"
           :key="tag.id"
-          class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded"
-        >
-          #{{ tag.name }}
-        </span>
+          :name="tag.name"
+          :to="{ name: 'Home', query: { tag: tag.id } }"
+        />
       </div>
 
       <!-- Meta -->

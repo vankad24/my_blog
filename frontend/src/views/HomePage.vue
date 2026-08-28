@@ -5,6 +5,7 @@ import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import PostList from '@/components/PostList.vue'
 import Pagination from '@/components/Pagination.vue'
+import TagFilter from '@/components/TagFilter.vue'
 
 const postsStore = usePostsStore()
 const authStore = useAuthStore()
@@ -34,6 +35,21 @@ watch([currentPage, searchQuery, selectedTag], () => {
   })
   loadPosts()
 })
+
+// Обновляем ref при изменении query params (например, клик по тегу из PostCard)
+watch(
+  () => ({
+    page: route.query.page,
+    search: route.query.search,
+    tag: route.query.tag,
+  }),
+  () => {
+    currentPage.value = parseInt(route.query.page) || 1
+    searchQuery.value = route.query.search || ''
+    selectedTag.value = route.query.tag || ''
+    loadPosts()
+  }
+)
 
 async function loadPosts() {
   loading.value = true
@@ -85,19 +101,7 @@ async function handleLike(id) {
         </div>
 
         <!-- Tag filter -->
-        <select
-          v-model="selectedTag"
-          class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-        >
-          <option value="">Все теги</option>
-          <option
-            v-for="tag in postsStore.tags"
-            :key="tag.id"
-            :value="tag.id"
-          >
-            #{{ tag.name }}
-          </option>
-        </select>
+        <TagFilter v-model="selectedTag" />
       </div>
     </div>
 

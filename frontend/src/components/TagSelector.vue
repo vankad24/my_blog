@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { usePostsStore } from '@/stores/posts'
+import { stringToHslColor } from '@/utils/stringToHslColor'
+import TagChip from '@/components/TagChip.vue'
 
 const props = defineProps({
   modelValue: {
@@ -28,6 +30,15 @@ const selectedTags = computed(() => {
 const availableTags = computed(() => {
   return postsStore.tags.filter(tag => !props.modelValue.includes(tag.id))
 })
+
+function getTagColor(name) {
+  return stringToHslColor(name)
+}
+
+function getTagTextColor(name) {
+  const hue = parseInt(stringToHslColor(name).match(/\d+/)[0])
+  return `hsl(${hue}, 60%, 30%)`
+}
 
 onMounted(async () => {
   if (postsStore.tags.length === 0) {
@@ -83,12 +94,12 @@ function closeDropdown() {
       <span
         v-for="tag in selectedTags"
         :key="tag.id"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-base font-semibold"
+        class="inline-flex items-center gap-1.5"
       >
-        {{ tag.name }}
+        <TagChip :name="tag.name" :active="true" />
         <button
           @click="removeTag(tag.id)"
-          class="text-primary-400 hover:text-primary-600 transition-colors ml-0.5"
+          class="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -120,10 +131,9 @@ function closeDropdown() {
               v-for="tag in availableTags"
               :key="tag.id"
               @click="addTag(tag.id)"
-              class="w-full text-left px-4 py-3 text-base font-semibold text-gray-800 hover:bg-gray-50 transition-colors flex items-center gap-2"
+              class="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
             >
-              <span class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-600">#</span>
-              #{{ tag.name }}
+              <TagChip :name="tag.name" />
             </button>
 
             <!-- Кнопка "Добавить тег" -->
