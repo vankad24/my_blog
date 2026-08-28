@@ -92,11 +92,6 @@ async function handleSubmit() {
           />
         </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Теги</label>
-        <TagSelector v-model="form.tags" />
-      </div>
-
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Содержание</label>
           <MarkdownEditor
@@ -104,6 +99,11 @@ async function handleSubmit() {
             :cache-id="`post-${route.params.id}`"
             placeholder="Напишите пост в Markdown..."
           />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Теги</label>
+          <TagSelector v-model="form.tags" />
         </div>
 
         <div class="flex justify-end space-x-2">

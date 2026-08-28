@@ -60,11 +60,6 @@ async function handleSubmit() {
 
     <form @submit.prevent="handleSubmit" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Теги</label>
-        <TagSelector v-model="form.tags" />
-      </div>
-
-      <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Содержание</label>
         <MarkdownEditor
           ref="editorRef"
@@ -72,6 +67,11 @@ async function handleSubmit() {
           cache-id="post-new"
           placeholder="Напишите пост в Markdown..."
         />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Теги</label>
+        <TagSelector v-model="form.tags" />
       </div>
 
       <div class="flex justify-end">

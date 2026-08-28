@@ -25,6 +25,10 @@ const selectedTags = computed(() => {
   }))
 })
 
+const availableTags = computed(() => {
+  return postsStore.tags.filter(tag => !props.modelValue.includes(tag.id))
+})
+
 onMounted(async () => {
   if (postsStore.tags.length === 0) {
     await postsStore.fetchTags()
@@ -79,14 +83,14 @@ function closeDropdown() {
       <span
         v-for="tag in selectedTags"
         :key="tag.id"
-        class="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-base font-semibold"
       >
         {{ tag.name }}
         <button
           @click="removeTag(tag.id)"
-          class="text-primary-400 hover:text-primary-600 transition-colors"
+          class="text-primary-400 hover:text-primary-600 transition-colors ml-0.5"
         >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -113,12 +117,12 @@ function closeDropdown() {
           <!-- Список тегов -->
           <div class="max-h-60 overflow-y-auto">
             <button
-              v-for="tag in postsStore.tags"
+              v-for="tag in availableTags"
               :key="tag.id"
               @click="addTag(tag.id)"
-              class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+              class="w-full text-left px-4 py-3 text-base font-semibold text-gray-800 hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
-              <span class="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500">#</span>
+              <span class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-600">#</span>
               #{{ tag.name }}
             </button>
 
