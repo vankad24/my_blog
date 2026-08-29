@@ -98,6 +98,7 @@ function closeDropdown() {
       >
         <TagChip :name="tag.name" :active="true" />
         <button
+          type="button"
           @click="removeTag(tag.id)"
           class="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
         >
@@ -110,6 +111,7 @@ function closeDropdown() {
       <!-- Кнопка "Добавить" -->
       <div class="relative">
         <button
+          type="button"
           @click="toggleDropdown"
           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-300 transition-colors"
         >
@@ -131,6 +133,7 @@ function closeDropdown() {
               v-for="tag in availableTags"
               :key="tag.id"
               @click="addTag(tag.id)"
+              type="button"
               class="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
             >
               <TagChip :name="tag.name" />
@@ -153,10 +156,11 @@ function closeDropdown() {
               type="text"
               placeholder="Название тега..."
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent mb-2"
-              @keydown.enter="createTag"
+              @keydown.enter.prevent="createTag"
             />
             <div class="flex gap-2">
               <button
+                type="button"
                 @click="createTag"
                 :disabled="!newTagName.trim() || isLoading"
                 class="flex-1 bg-primary-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
