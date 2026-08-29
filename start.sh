@@ -1,11 +1,27 @@
 #!/bin/bash
 
-sudo apt update
-sudo apt install nginx certbot certificates python3-certbot-nginx
+set -e
+
+if command -v apt >/dev/null 2>&1; then
+    echo "Detected apt. Installing packages..."
+    
+    sudo apt update
+    sudo apt install -y nginx certbot python3-certbot-nginx
+
+elif command -v apk >/dev/null 2>&1; then
+    echo "Detected apk. Installing packages..."
+    
+    sudo apk update
+    sudo apk add nginx certbot certbot-nginx
+
+else
+    echo "Error: neither apt nor apk was found."
+    exit 1
+fi
 
 
 # read -rp "Enter server name for Nginx: " SERVER_NAME
-SERVER_NAME="blog.ru"
+SERVER_NAME="molo4ko-blog.h4ck.me"
 PROJECT_NAME="my_blog"
 
 export SERVER_NAME
