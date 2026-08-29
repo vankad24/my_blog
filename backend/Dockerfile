@@ -1,24 +1,27 @@
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies for PostgreSQL
+# Системные зависимости
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libpq-dev \
+    && apt-get install -y --no-install-recommends \
+        build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+
+# Сначала requirements — чтобы Docker мог кэшировать этот слой
 COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
+# Исходники Django
 COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
+# Collect static files (настраивается если нужна django admin panel)
+# RUN python manage.py collectstatic --noinput || true
 
 EXPOSE 8000
 
