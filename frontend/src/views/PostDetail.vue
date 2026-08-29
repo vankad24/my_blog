@@ -5,6 +5,7 @@ import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import CommentForm from '@/components/CommentForm.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
+import { formatRelativeDate } from '@/utils/formatDate'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,15 +66,7 @@ async function handleComment(data) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('ru-RU', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatRelativeDate(dateStr)
 }
 
 async function sharePost() {

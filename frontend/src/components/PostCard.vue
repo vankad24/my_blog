@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import TagChip from '@/components/TagChip.vue'
+import { formatRelativeDate } from '@/utils/formatDate'
 
 // Количество строк превью перед сворачиванием
 const PREVIEW_LINES = 8
@@ -57,13 +58,7 @@ async function sharePost() {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('ru-RU', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  return formatRelativeDate(dateStr)
 }
 
 function handleLike() {
