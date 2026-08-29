@@ -1,7 +1,10 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
+
+const authStore = useAuthStore()
 
 const props = defineProps({
   placeholder: {
@@ -27,8 +30,16 @@ const content = defineModel({ type: String, default: '' })
 const editorElement = ref(null)
 let editor = null
 
-onMounted(() => {
+function createEditor() {
   if (!editorElement.value) return
+
+  const headers = {
+    'X-Requested-With': 'XMLHttpRequest',
+  }
+  if (authStore.accessToken) {
+    headers['Authorization'] = `Bearer ${authStore.accessToken}`
+  }
+
   editor = new Vditor(editorElement.value, {
     value: content.value || '',
     mode: props.mode,
@@ -69,15 +80,27 @@ onMounted(() => {
       multiple: true,
       fieldName: 'file',
       url: '/api/upload/image/',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-      },
+      headers,
       max: 200 * 1024 * 1024,  // 200MB
     },
     input(value) {
       content.value = value
     },
   })
+}
+
+// Если токен обновился (например, через refresh), пересоздаём редактор
+// чтобы upload-хедеры содержали актуальный токен
+watch(() => authStore.accessToken, () => {
+  if (editor) {
+    editor.destroy()
+    editor = null
+  }
+  createEditor()
+})
+
+onMounted(() => {
+  createEditor()
 })
 
 // Синхронизация при асинхронной загрузке значения извне (например, из API).

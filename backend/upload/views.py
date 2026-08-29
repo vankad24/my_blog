@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -51,7 +51,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def upload_image(request):
     """Загрузка файлов (изображения, видео, документы) для Vditor."""
     file = request.FILES.get('file')
