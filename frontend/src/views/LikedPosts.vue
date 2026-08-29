@@ -36,6 +36,12 @@ async function handleLike(id) {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 }
+
+async function handleDelete(id) {
+  if (!confirm('Удалить пост?')) return
+  await postsStore.deletePost(id)
+  posts.value = posts.value.filter(p => p.id !== id)
+}
 </script>
 
 <template>
@@ -46,6 +52,7 @@ async function handleLike(id) {
       :posts="posts"
       :loading="loading"
       @like="handleLike"
+      @delete="handleDelete"
     />
 
     <div v-if="!loading && posts.length === 0" class="text-center py-12">

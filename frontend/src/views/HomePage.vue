@@ -86,6 +86,12 @@ async function handleLike(id) {
     post.likes_count = result.likes_count
   }
 }
+
+async function handleDelete(id) {
+  if (!confirm('Удалить пост?')) return
+  await postsStore.deletePost(id)
+  await loadPosts()
+}
 </script>
 
 <template>
@@ -111,11 +117,12 @@ async function handleLike(id) {
     </div>
 
     <!-- Posts -->
-    <PostList
-      :posts="postsStore.posts"
-      :loading="loading"
-      @like="handleLike"
-    />
+      <PostList
+        :posts="postsStore.posts"
+        :loading="loading"
+        @like="handleLike"
+        @delete="handleDelete"
+      />
 
     <!-- Pagination -->
     <Pagination

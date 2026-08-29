@@ -1,8 +1,12 @@
 <script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/PostCard.vue'
 import Pagination from '@/components/Pagination.vue'
 
-defineProps({
+const authStore = useAuthStore()
+
+const props = defineProps({
   posts: {
     type: Array,
     required: true,
@@ -13,7 +17,19 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['like', 'page-change'])
+const emit = defineEmits(['like', 'page-change', 'delete'])
+
+const isAuthor = (post) => {
+  return authStore.user?.login === post.author_login
+}
+
+function handleEdit(id) {
+  window.location.href = `/edit/${id}`
+}
+
+function handleDelete(id) {
+  emit('delete', id)
+}
 </script>
 
 <template>
@@ -33,6 +49,9 @@ const emit = defineEmits(['like', 'page-change'])
       v-for="post in posts"
       :key="post.id"
       :post="post"
+      :is-author="isAuthor(post)"
+      :on-edit="handleEdit"
+      :on-delete="handleDelete"
       @like="(id) => emit('like', id)"
     />
   </div>
