@@ -2,6 +2,7 @@
 
 set -e
 
+git pull
 
 # read -rp "Enter server name for Nginx: " SERVER_NAME
 SERVER_NAME="molo4ko-blog.h4ck.me"
