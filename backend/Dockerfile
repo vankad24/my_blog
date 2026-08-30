@@ -25,4 +25,5 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "myblog_backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Запускаем миграции перед gunicorn
+CMD python manage.py migrate --noinput && gunicorn myblog_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3
