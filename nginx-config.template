@@ -3,7 +3,7 @@ server {
     server_name {SERVER_NAME};
 
     # Vue SPA
-    root /var/www/my_blog/dist;
+    root /var/www/my_blog/frontend/dist;
     index index.html;
 
     # Django API
