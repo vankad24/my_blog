@@ -14,9 +14,15 @@ load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['*']
 
+# import logging
+# logger = logging.getLogger(__name__)
+# logger.warning("BASE_DIR = %s", BASE_DIR)
+# logger.warning("path = %s", Path(__file__))
+# logger.warning("host = %s", os.getenv('DB_HOST', 'no env file'))
+# logger.warning("SECRET_KEY = %s", SECRET_KEY)
 
 # Application definition
 INSTALLED_APPS = [
