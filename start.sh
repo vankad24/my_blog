@@ -31,10 +31,12 @@ sudo ln -s /etc/nginx/sites-available/$PROJECT_NAME /etc/nginx/sites-enabled/$PR
 
 sudo nginx -t && sudo systemctl reload nginx
 
-docker compose --env-file ./backend/.env up -d --build
+docker compose up -d --build
 
 sudo certbot --nginx -d "$SERVER_NAME"
 
 sudo certbot renew --dry-run
 
-echo "Try visit: https://$SERVER_NAME"
+echo backend 127.0.0.1:8000
+echo pgadmin 127.0.0.1:8080 server connection: host=postgres:5432 username=postgres
+echo "To check https try visit: https://$SERVER_NAME"
