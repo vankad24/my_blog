@@ -31,7 +31,7 @@ sudo ln -s /etc/nginx/sites-available/$PROJECT_NAME /etc/nginx/sites-enabled/$PR
 
 sudo nginx -t && sudo systemctl reload nginx
 
-docker compose up -d --build
+docker compose --env-file ./backend/.env up -d --build
 
 sudo certbot --nginx -d "$SERVER_NAME"
 
