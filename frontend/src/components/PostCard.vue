@@ -105,13 +105,7 @@ function handleDelete() {
         </span>
       </div>
 
-      <!-- Title & Actions (временно отключён заголовок) -->
       <div class="flex items-start justify-between gap-4 mb-4">
-        <!-- <h2 class="text-xl font-bold text-gray-900 leading-tight">
-          <router-link :to="{ name: 'PostDetail', params: { id: post.id } }">
-            {{ post.title }}
-          </router-link>
-        </h2> -->
         <div v-if="isAuthor" class="flex items-center gap-1 shrink-0">
           <router-link
             :to="{ name: 'EditPost', params: { id: post.id } }"
