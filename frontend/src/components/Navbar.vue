@@ -64,7 +64,7 @@ function handleLogout() {
           </template>
           <template v-else>
             <router-link to="/login" class="btn-secondary text-sm">Войти</router-link>
-            <router-link to="/register" class="btn-primary text-sm">Регистрация</router-link>
+            <!-- <router-link to="/register" class="btn-primary text-sm">Регистрация</router-link> -->
           </template>
         </div>
       </div>

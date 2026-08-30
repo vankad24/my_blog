@@ -20,7 +20,7 @@ urlpatterns = [
     # Аутентификация
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token'),
     path('auth/refresh/', CustomTokenRefreshView.as_view(), name='token-refresh'),
-    path('auth/register/', RegisterView.as_view(), name='register'),
+    # path('auth/register/', RegisterView.as_view(), name='register'),  # Временно отключён
     path('auth/logout/', LogoutView.as_view(), name='logout'),
 
     # Восстановление пароля
