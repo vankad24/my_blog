@@ -73,7 +73,7 @@ async function handleSubmit() {
 
     <p class="text-center text-gray-500 text-sm mt-4">
       Нет аккаунта?
-      <router-link to="/register" class="text-primary-600 hover:underline">Зарегистрироваться</router-link>
+      <!-- <router-link to="/register" class="text-primary-600 hover:underline">Зарегистрироваться</router-link> -->
     </p>
   </div>
 </template>
