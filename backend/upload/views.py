@@ -46,8 +46,8 @@ ALLOWED_TYPES = {
 }
 
 MAX_FILE_SIZE = 200 * 1024 * 1024  # 200 MB
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / 'media'
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+MEDIA_DIR = Path(settings.MEDIA_ROOT)
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @api_view(['POST'])
@@ -75,7 +75,7 @@ def upload_image(request):
 
     extension = ALLOWED_TYPES[file.content_type]
     filename = f'{uuid4()}{extension}'
-    file_path = UPLOAD_DIR / filename
+    file_path = MEDIA_DIR / filename
 
     with file_path.open('wb') as buffer:
         for chunk in file.chunks():

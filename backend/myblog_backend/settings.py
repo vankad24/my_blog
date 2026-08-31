@@ -112,7 +112,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (user uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR.parent / 'media'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # File upload limits (200MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
