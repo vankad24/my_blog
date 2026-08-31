@@ -48,9 +48,15 @@ docker compose up -d --build
 # Run in subshell
 (cd frontend && npm install && npm run build)
 
-sudo certbot --nginx -d "$SERVER_NAME"
+echo "Do you want to update https certificates? (y/n)"
+read answer
+if [ "$answer" = "y" ]; then
+	sudo certbot --nginx -d "$SERVER_NAME"
+	sudo certbot renew --dry-run
 
-sudo certbot renew --dry-run
+else
+	echo "Skip updating certificates"
+fi
 
 echo backend 127.0.0.1:8000
 echo pgadmin 127.0.0.1:8080 server connection: host=postgres:5432 username=postgres
