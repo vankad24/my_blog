@@ -42,6 +42,8 @@ fi
 
 sudo nginx -t && sudo systemctl reload nginx
 
+mkdir -p media
+
 docker compose down
 docker compose up -d --build
 
