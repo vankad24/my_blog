@@ -105,7 +105,7 @@ function handleDelete() {
         </span>
       </div>
 
-      <div class="flex items-start justify-between gap-4 mb-4">
+      <div class="flex items-start justify-end gap-4 mb-4">
         <div v-if="isAuthor" class="flex items-center gap-1 shrink-0">
           <router-link
             :to="{ name: 'EditPost', params: { id: post.id } }"
