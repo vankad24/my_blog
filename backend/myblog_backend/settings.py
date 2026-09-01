@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Загрузка .env
-load_dotenv(BASE_DIR / '.env')
+# Загрузка .env для windows
+load_dotenv(BASE_DIR.parent / '.env')
 
 # SECURITY WARNING
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
