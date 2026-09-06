@@ -6,7 +6,7 @@ import TagChip from '@/components/TagChip.vue'
 import { formatRelativeDate } from '@/utils/formatDate'
 
 // Количество строк превью перед сворачиванием
-const PREVIEW_LINES = 8
+const PREVIEW_LINES = 14
 const LINE_HEIGHT = 24 // px, стандартный line-height для body
 
 const props = defineProps({
@@ -105,7 +105,7 @@ function handleDelete() {
         </span>
       </div>
 
-      <div class="flex items-start justify-end gap-4 mb-4">
+      <div class="flex items-start justify-end gap-4">
         <div v-if="isAuthor" class="flex items-center gap-1 shrink-0">
           <router-link
             :to="{ name: 'EditPost', params: { id: post.id } }"
