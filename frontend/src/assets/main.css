@@ -106,6 +106,10 @@ body {
   max-height: 80vh;
 }
 
+.markdown-preview img:hover{
+  cursor: pointer;
+}
+
 .markdown-preview video {
   @apply rounded-lg max-w-full h-auto mx-auto my-4;
   max-height: 80vh;

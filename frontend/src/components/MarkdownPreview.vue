@@ -1,7 +1,9 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
+import VueEasyLightbox from 'vue-easy-lightbox'
+import 'vue-easy-lightbox/dist/external-css/vue-easy-lightbox.css'
 
 const props = defineProps({
   markdown: {
@@ -12,9 +14,24 @@ const props = defineProps({
 
 const html = ref('')
 const containerRef = ref(null)
+const visible = ref(false)
+const image = ref('')
 
 const VIDEO_EXTS = ['.mp4', '.webm', '.ogg', '.avi', '.mkv', '.mov']
 const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']
+
+function openImage(src) {
+  image.value = src
+  visible.value = true
+}
+
+function handleImageClick(event) {
+  const img = event.target.closest('img')
+  if (!img || !containerRef.value?.contains(img)) {
+    return
+  }
+  openImage(img.src)
+}
 
 function convertMediaLinks() {
   if (!containerRef.value) return
@@ -71,10 +88,33 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  () => html.value,
+  async () => {
+    await nextTick()
+    // Перепривязываем обработчик после обновления HTML
+    if (containerRef.value) {
+      containerRef.value.removeEventListener('click', handleImageClick)
+      containerRef.value.addEventListener('click', handleImageClick)
+    }
+  },
+)
+
+onBeforeUnmount(() => {
+  if (containerRef.value) {
+    containerRef.value.removeEventListener('click', handleImageClick)
+  }
+})
 </script>
 
 <template>
   <div ref="containerRef" class="markdown-preview vditor-reset break-words" v-html="html"></div>
+  <VueEasyLightbox
+    :visible="visible"
+    :imgs="image"
+    @hide="visible = false"
+  />
 </template>
 
 <style scoped>
@@ -85,5 +125,9 @@ watch(
 
 .markdown-preview :deep(a) svg {
   @apply w-4 h-4 flex-shrink-0;
+}
+
+.markdown-preview :deep(img) {
+  @apply cursor-pointer hover:opacity-90 transition-opacity;
 }
 </style>

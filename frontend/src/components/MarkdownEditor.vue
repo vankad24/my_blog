@@ -3,6 +3,8 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
+import VueEasyLightbox from 'vue-easy-lightbox'
+import 'vue-easy-lightbox/dist/external-css/vue-easy-lightbox.css'
 
 const authStore = useAuthStore()
 
@@ -29,6 +31,21 @@ const content = defineModel({ type: String, default: '' })
 
 const editorElement = ref(null)
 let editor = null
+const visible = ref(false)
+const image = ref('')
+
+function openImage(src) {
+  image.value = src
+  visible.value = true
+}
+
+function handleImageClick(event) {
+  const img = event.target.closest('img')
+  if (!img || !editorElement.value?.contains(img)) {
+    return
+  }
+  openImage(img.src)
+}
 
 function createEditor() {
   if (!editorElement.value) return
@@ -83,6 +100,10 @@ function createEditor() {
       headers,
       max: 200 * 1024 * 1024,  // 200MB
     },
+    after() {
+      // Привязываем обработчик клика после создания редактора
+      editorElement.value.addEventListener('click', handleImageClick)
+    },
     input(value) {
       content.value = value
     },
@@ -94,6 +115,7 @@ function createEditor() {
 watch(() => authStore.accessToken, () => {
   if (editor) {
     editor.destroy()
+    editorElement.value?.removeEventListener('click', handleImageClick)
     editor = null
   }
   createEditor()
@@ -114,6 +136,7 @@ watch(content, (value) => {
 
 onBeforeUnmount(() => {
   editor?.destroy()
+  editorElement.value?.removeEventListener('click', handleImageClick)
   editor = null
 })
 
@@ -128,4 +151,9 @@ defineExpose({ clear })
 
 <template>
   <div ref="editorElement"></div>
+  <VueEasyLightbox
+    :visible="visible"
+    :imgs="image"
+    @hide="visible = false"
+  />
 </template>
