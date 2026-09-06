@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { usePostsStore } from '@/stores/posts'
-import { stringToHslColor } from '@/utils/stringToHslColor'
 import TagChip from '@/components/TagChip.vue'
 
 const props = defineProps({
@@ -30,15 +29,6 @@ const selectedTags = computed(() => {
 const availableTags = computed(() => {
   return postsStore.tags.filter(tag => !props.modelValue.includes(tag.id))
 })
-
-function getTagColor(name) {
-  return stringToHslColor(name)
-}
-
-function getTagTextColor(name) {
-  const hue = parseInt(stringToHslColor(name).match(/\d+/)[0])
-  return `hsl(${hue}, 60%, 30%)`
-}
 
 onMounted(async () => {
   if (postsStore.tags.length === 0) {
@@ -96,7 +86,7 @@ function closeDropdown() {
         :key="tag.id"
         class="inline-flex items-center gap-1.5"
       >
-        <TagChip :name="tag.name" :active="true" />
+        <TagChip :name="tag.name" />
         <button
           type="button"
           @click="removeTag(tag.id)"

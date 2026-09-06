@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { stringToHslColor } from '@/utils/stringToHslColor'
+import { stringToHue } from '@/utils/stringFunctions'
 
 const props = defineProps({
   name: {
@@ -17,29 +17,27 @@ const props = defineProps({
   },
 })
 
-const color = computed(() => stringToHslColor(props.name))
-const textColor = computed(() => {
-  const hue = parseInt(stringToHslColor(props.name).match(/\d+/)[0])
-  return `hsl(${hue}, 60%, 30%)`
-})
+const hue = computed(() => stringToHue(props.name))
+const color = computed(() => `hsl(${hue.value}, 80%, 90%)`)
+const textColor = computed(() => `hsl(${hue.value}, 60%, 30%)`)
 
 const ringColorClass = computed(() => {
   if (!props.active) return ''
-  const hue = parseInt(stringToHslColor(props.name).match(/\d+/)[0])
+  const h = hue.value
   // Map hue to nearest Tailwind color
-  if (hue < 15 || hue >= 345) return 'ring-red-300'
-  if (hue < 45) return 'ring-orange-300'
-  if (hue < 60) return 'ring-amber-300'
-  if (hue < 75) return 'ring-yellow-300'
-  if (hue < 90) return 'ring-lime-300'
-  if (hue < 105) return 'ring-green-300'
-  if (hue < 135) return 'ring-emerald-300'
-  if (hue < 165) return 'ring-teal-300'
-  if (hue < 195) return 'ring-cyan-300'
-  if (hue < 225) return 'ring-sky-300'
-  if (hue < 255) return 'ring-blue-300'
-  if (hue < 275) return 'ring-indigo-300'
-  if (hue < 315) return 'ring-violet-300'
+  if (h < 15 || h >= 345) return 'ring-red-300'
+  if (h < 45) return 'ring-orange-300'
+  if (h < 60) return 'ring-amber-300'
+  if (h < 75) return 'ring-yellow-300'
+  if (h < 90) return 'ring-lime-300'
+  if (h < 105) return 'ring-green-300'
+  if (h < 135) return 'ring-emerald-300'
+  if (h < 165) return 'ring-teal-300'
+  if (h < 195) return 'ring-cyan-300'
+  if (h < 225) return 'ring-sky-300'
+  if (h < 255) return 'ring-blue-300'
+  if (h < 275) return 'ring-indigo-300'
+  if (h < 315) return 'ring-violet-300'
   return 'ring-purple-300'
 })
 </script>
