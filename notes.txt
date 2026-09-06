@@ -10,7 +10,8 @@ http://127.0.0.1:5173/
 
 ssh -p 443 -R0:localhost:8080 a.pinggy.io
 
-Если есть проблема с загрузкой
+Если есть проблема с загрузкой файлов через эндпоинт
 sudo chown nginx:nginx /var/lib/nginx/tmp
 
+sudo nft flush ruleset && sudo systemctl restart docker
 
