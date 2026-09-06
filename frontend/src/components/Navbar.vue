@@ -28,22 +28,22 @@ function handleLogout() {
 
         <!-- Navigation -->
         <div class="flex items-center space-x-4">
-          <router-link to="/" class="nav-link" :class="{ 'text-primary-600': route.name === 'Home' }">
+          <router-link to="/" class="nav-link" :class="{ 'text-primary-600 border-b-2 border-primary-600': route.name === 'Home' }">
             Главная
           </router-link>
 
           <template v-if="isLoggedIn">
-            <router-link to="/create" class="nav-link" :class="{ 'text-primary-600': route.name === 'CreatePost' }">
+            <router-link to="/create" class="nav-link" :class="{ 'text-primary-600 border-b-2 border-primary-600': route.name === 'CreatePost' }">
               Написать
             </router-link>
-            <router-link to="/liked" class="nav-link" :class="{ 'text-primary-600': route.name === 'LikedPosts' }">
+            <router-link to="/liked" class="nav-link" :class="{ 'text-primary-600 border-b-2 border-primary-600': route.name === 'LikedPosts' }">
               Избранное
             </router-link>
             <router-link
               v-if="isModerator"
               to="/moderation"
               class="nav-link"
-              :class="{ 'text-primary-600': route.name === 'Moderation' }"
+              :class="{ 'text-primary-600 border-b-2 border-primary-600': route.name === 'Moderation' }"
             >
               Модерация
             </router-link>
@@ -51,7 +51,7 @@ function handleLogout() {
               v-if="currentUser"
               :to="{ name: 'Profile', params: { login: currentUser.login } }"
               class="nav-link"
-              :class="{ 'text-primary-600': route.name === 'Profile' }"
+              :class="{ 'text-primary-600 border-b-2 border-primary-600': route.name === 'Profile' }"
             >
               Профиль
             </router-link>
@@ -74,7 +74,7 @@ function handleLogout() {
 
 <style scoped>
 .nav-link {
-  @apply text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors;
+  @apply text-gray-600 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors;
 }
 .btn-primary {
   @apply bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium;
