@@ -8,7 +8,7 @@ import CookieBanner from '@/components/CookieBanner.vue'
   <div class="min-h-screen flex flex-col">
     <Navbar />
     <main class="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-      <router-view />
+      <router-view :key="$route.name" />
     </main>
     <Footer />
     <CookieBanner />

@@ -4,8 +4,8 @@
       <div class="flex justify-between items-center">
         <p class="text-gray-500 text-sm">&copy; {{ new Date().getFullYear() }} Molo4ko production. Все права не защищены.</p>
         <div class="flex space-x-4">
-          <a href="#" class="text-gray-400 hover:text-gray-600 text-sm">Политика конфиденциальности</a>
-          <a href="#" class="text-gray-400 hover:text-gray-600 text-sm">Условия использования</a>
+          <router-link to="/privacy" class="text-gray-400 hover:text-gray-600 text-sm">Политика конфиденциальности</router-link>
+          <router-link to="/terms" class="text-gray-400 hover:text-gray-600 text-sm">Условия использования</router-link>
         </div>
       </div>
     </div>

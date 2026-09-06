@@ -52,6 +52,16 @@ const routes = [
     meta: { requiresAuth: true, requiresModerator: true },
   },
   {
+    path: '/privacy',
+    name: 'PrivacyPolicy',
+    component: () => import('@/views/LegalPage.vue'),
+  },
+  {
+    path: '/terms',
+    name: 'TermsOfUse',
+    component: () => import('@/views/LegalPage.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),
