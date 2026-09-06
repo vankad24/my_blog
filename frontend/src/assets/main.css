@@ -118,3 +118,8 @@ ol {
 .vditor-sv.vditor-reset, div.vditor-reset{
   font-family: "Helvetica Neue", "Luxi Sans", "Hiragino Sans GB", "Microsoft Yahei", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
+
+.logo{
+  font-size: clamp(0.5rem, 2vw, 1.5rem);
+}
+
