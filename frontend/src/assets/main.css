@@ -5,7 +5,7 @@
 /* Global styles */
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Noto Color Emoji', system-ui, -apple-system, sans-serif;
 }
 
 /* Custom scrollbar */
@@ -107,4 +107,8 @@ body {
 
 ol {
   list-style: initial;
+}
+
+.vditor-sv.vditor-reset, div.vditor-reset{
+  font-family: "Helvetica Neue", "Luxi Sans", "Hiragino Sans GB", "Microsoft Yahei", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
