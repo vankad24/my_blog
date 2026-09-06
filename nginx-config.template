@@ -1,100 +1,98 @@
-http {
-    # Rate limiting zones
-    # 10 requests/second from a single IP (global)
-    limit_req_zone $binary_remote_addr zone=per_ip:10m rate=10r/s;
-    # 300 requests/minute from a single IP (global)
-    limit_req_zone $binary_remote_addr zone=per_minute:10m rate=300r/m;
-    # 5 requests/minute for auth endpoints
-    limit_req_zone $binary_remote_addr zone=per_ip_auth:10m rate=5r/m;
+# Rate limiting zones
+# 10 requests/second from a single IP (global)
+limit_req_zone $binary_remote_addr zone=per_ip:10m rate=10r/s;
+# 300 requests/minute from a single IP (global)
+limit_req_zone $binary_remote_addr zone=per_minute:10m rate=300r/m;
+# 5 requests/minute for auth endpoints
+limit_req_zone $binary_remote_addr zone=per_ip_auth:10m rate=5r/m;
 
-    server {
-        listen 80;
-        server_name {SERVER_NAME};
+server {
+    listen 80;
+    server_name {SERVER_NAME};
 
-        # Timeouts
-        client_header_timeout 10s;
-        keepalive_timeout 15s;
-        send_timeout 10s;
-        client_body_timeout 20s;
+    # Timeouts
+    client_header_timeout 10s;
+    keepalive_timeout 15s;
+    send_timeout 10s;
+    client_body_timeout 20s;
 
-        # Global body size limit
-        client_max_body_size 10m;
+    # Global body size limit
+    client_max_body_size 10m;
 
-        # Global rate limiting
-        limit_req zone=per_ip burst=20 nodelay;
-        limit_req zone=per_minute burst=50 nodelay;
+    # Global rate limiting
+    limit_req zone=per_ip burst=20 nodelay;
+    limit_req zone=per_minute burst=50 nodelay;
 
-        # Vue SPA
-        root /var/www/my_blog/frontend/dist;
-        index index.html;
+    # Vue SPA
+    root /var/www/my_blog/frontend/dist;
+    index index.html;
 
-        # Auth endpoints — strict rate limiting
-        location /api/auth/login/ {
-            limit_req zone=per_ip_auth burst=5 nodelay;
-            proxy_pass http://127.0.0.1:8000;
+    # Auth endpoints — strict rate limiting
+    location /api/auth/login/ {
+        limit_req zone=per_ip_auth burst=5 nodelay;
+        proxy_pass http://127.0.0.1:8000;
 
-            proxy_http_version 1.1;
+        proxy_http_version 1.1;
 
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-        location /api/auth/register/ {
-            limit_req zone=per_ip_auth burst=5 nodelay;
-            proxy_pass http://127.0.0.1:8000;
+    location /api/auth/register/ {
+        limit_req zone=per_ip_auth burst=5 nodelay;
+        proxy_pass http://127.0.0.1:8000;
 
-            proxy_http_version 1.1;
+        proxy_http_version 1.1;
 
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-        # Django API
-        location /api/ {
-            proxy_pass http://127.0.0.1:8000;
+    # Django API
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
 
-            proxy_http_version 1.1;
+        proxy_http_version 1.1;
 
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-        # Upload endpoint — increased body size limit
-        location /api/upload/ {
-            client_max_body_size 300m;
-            proxy_pass http://127.0.0.1:8000;
+    # Upload endpoint — increased body size limit
+    location /api/upload/ {
+        client_max_body_size 300m;
+        proxy_pass http://127.0.0.1:8000;
 
-            proxy_http_version 1.1;
+        proxy_http_version 1.1;
 
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-        # Django Admin panel
-        # location /admin/ {
-        #     proxy_pass http://127.0.0.1:8000;
-        #     proxy_set_header Host $host;
-        # }
+    # Django Admin panel
+    # location /admin/ {
+    #     proxy_pass http://127.0.0.1:8000;
+    #     proxy_set_header Host $host;
+    # }
 
-        # Django media files
-        location /media/ {
-            alias /var/www/my_blog/media/;
+    # Django media files
+    location /media/ {
+        alias /var/www/my_blog/media/;
 
-            expires 30d;
-            add_header Cache-Control "public";
-        }
+        expires 30d;
+        add_header Cache-Control "public";
+    }
 
-        # Vue SPA
-        location / {
-            try_files $uri $uri/ /index.html;
-        }
+    # Vue SPA
+    location / {
+        try_files $uri $uri/ /index.html;
     }
 }
