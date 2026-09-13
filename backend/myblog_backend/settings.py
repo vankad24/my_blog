@@ -7,10 +7,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Build paths
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Загрузка .env для windows
-load_dotenv(BASE_DIR.parent / '.env')
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
@@ -106,6 +106,8 @@ TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
 
+# All app data files
+APP_DATA_ROOT = BASE_DIR / 'app_data'
 
 # Static files
 STATIC_URL = 'static/'
@@ -113,7 +115,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (user uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = APP_DATA_ROOT / 'media'
 
 # File upload limits (200MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
@@ -121,7 +123,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
 
 # Backup
 BACKUP_KEY = os.getenv('BACKUP_KEY', '')
-BACKUP_DIR = BASE_DIR / 'backups'
+BACKUP_DIR = APP_DATA_ROOT / 'backups'
 
 
 # Default primary key field type

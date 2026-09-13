@@ -98,7 +98,7 @@ server {
 
     # Django media files
     location /media/ {
-        alias /var/www/my_blog/media/;
+        alias /var/www/my_blog/app_data/media/;
 
         expires 30d;
         add_header Cache-Control "public";

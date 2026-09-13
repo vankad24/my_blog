@@ -7,8 +7,7 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      - ./media:/app/media
-      - ./backups:/app/backups
+      - ./app_data:/app_data
     environment:
       - DJANGO_SETTINGS_MODULE=myblog_backend.settings
     restart: unless-stopped
