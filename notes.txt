@@ -7,8 +7,8 @@ cd backend
 
 http://127.0.0.1:5173/
 
-
-ssh -p 443 -R0:localhost:8080 a.pinggy.io
+Пробросить порты для подключения к PgAdmin (вместо пароля просто нажать enter)
+ssh -p 443 -R0:localhost:8080 free.pinggy.io
 
 Если есть проблема с загрузкой файлов через эндпоинт
 sudo chown nginx:nginx /var/lib/nginx/tmp
