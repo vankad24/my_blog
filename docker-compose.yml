@@ -36,8 +36,13 @@ services:
     ports:
       - "127.0.0.1:8080:80"
 
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
     depends_on:
       - postgres
 
 volumes:
   postgres_data:
+  pgadmin_data:
+
