@@ -18,6 +18,8 @@ urlpatterns = [
     path('api/', include('comments.urls')),
     path('api/', include('moderation.urls')),
     path('api/', include('upload.urls')),
+    # Backup (вне /api/)
+    path('backup/', include('backup.urls')),
     # Документация API
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
