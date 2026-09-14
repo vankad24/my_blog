@@ -1,12 +1,14 @@
-from pathlib import Path
-
 from django.conf import settings
+from django.http import StreamingHttpResponse
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-BACKUP_STUB_FILENAME = 'test-backup'
+from utils.backup_functions import stream_pg_dump
+
+BACKUP_FILENAME_TEMPLATE = 'backup-postgre-{timestamp}.dump'
 
 
 @api_view(['GET'])
@@ -22,9 +24,21 @@ def backup(request):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    # Заглушка вместо реального бэкапа
-    backup_dir = Path(settings.BACKUP_DIR)
-    backup_dir.mkdir(parents=True, exist_ok=True)
-    (backup_dir / BACKUP_STUB_FILENAME).touch()
+    filename = BACKUP_FILENAME_TEMPLATE.format(
+        timestamp=timezone.localtime().strftime('%Y-%m-%d_%H-%M-%S'),
+    )
 
-    return Response({'detail': 'Backup created'}, status=status.HTTP_200_OK)
+    response = StreamingHttpResponse(
+        stream_pg_dump(
+            db_name=settings.DB_NAME,
+            host=settings.DB_HOST,
+            port=int(settings.DB_PORT),
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+            format='c',
+        ),
+        content_type='application/octet-stream',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response

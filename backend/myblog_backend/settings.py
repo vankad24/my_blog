@@ -96,7 +96,7 @@ DATABASES = {
         'PORT': DB_PORT,
     }
 }
-}
+
 
 
 # Password validation
