@@ -41,10 +41,53 @@ def _backup_filename(template):
     return template.format(timestamp=timestamp)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def list_media(request):
+    """Список файлов в settings.MEDIA_ROOT (только верхний уровень).
+
+    Доступ по ключу из query-параметра access_key.
+    Тело (JSON): {"exclude": ["file1.txt", "folder1"]} — необязательно,
+    элементы исключаются по имени (файл или каталог целиком).
+    """
+    if _access_key_denied(request):
+        return _access_denied()
+
+    exclude_raw = request.data.get('exclude', []) if isinstance(request.data, dict) else []
+
+    if not isinstance(exclude_raw, list) or not all(isinstance(name, str) for name in exclude_raw):
+        return Response(
+            {'detail': 'Field "exclude" must be an array of strings'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    exclude = set(exclude_raw)
+
+    media_root = Path(settings.MEDIA_ROOT)
+
+    if not media_root.is_dir():
+        return Response(
+            {'detail': f'Media directory does not exist: {media_root}'},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    names = {item.name for item in media_root.iterdir()} - exclude
+    files = sorted(
+        item.relative_to(media_root).as_posix()
+        for item in media_root.iterdir()
+        if item.name in names and item.is_file()
+    )
+
+    return Response({'files': files, 'count': len(files)})
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def backup_db(request):
-    """Дамп базы данных потоком. Доступ по ключу из query-параметра access_key."""
+    """Дамп базы данных потоком. Доступ по ключу из query-параметра access_key.
+
+    Временно отключён в urls.py.
+    """
     if _access_key_denied(request):
         return _access_denied()
 
