@@ -452,3 +452,5 @@ test/
 /.idea
 
 
+/backup_script/db
+/backup_script/media
