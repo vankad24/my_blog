@@ -83,12 +83,15 @@ server {
     #     proxy_set_header Host $host;
     # }
 
-    # Backup endpoint
-    location /backup/ {
+    # Backup endpoints — префикс /backup покрывает /backup и все вложенные (/backup/db/ и т.д.)
+    location /backup {
         limit_req zone=per_ip_auth burst=5 nodelay;
         proxy_pass http://127.0.0.1:8000;
 
         proxy_http_version 1.1;
+
+        # Дамп отдаётся потоком — не буферизуем ответ на стороне nginx
+        proxy_buffering off;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

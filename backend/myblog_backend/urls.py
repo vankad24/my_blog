@@ -18,7 +18,7 @@ urlpatterns = [
     path('api/', include('comments.urls')),
     path('api/', include('moderation.urls')),
     path('api/', include('upload.urls')),
-    # Backup (вне /api/)
+    # Backup (вне /api/): /backup/db/
     path('backup/', include('backup.urls')),
     # Документация API
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'myblog_backend.wsgi.application'
 
 # Database
 db_engine = os.getenv('DB_ENGINE', 'django.db.backends.postgresql')
-# Параметры БД вынесены отдельно: к ним обращается эндпоинт /backup/ при дампе
+# Параметры БД вынесены отдельно: к ним обращается эндпоинт /backup/db/ при дампе
 DB_NAME = os.getenv('DB_NAME', 'my_blog')
 DB_USER = os.getenv('DB_USER', 'postgres')
 DB_PASSWORD = os.getenv('DB_PASSWORD', '')
