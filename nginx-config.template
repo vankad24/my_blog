@@ -83,7 +83,8 @@ server {
     #     proxy_set_header Host $host;
     # }
 
-    # Backup endpoints — префикс /backup покрывает /backup и все вложенные (/backup/db/ и т.д.)
+    # Backup endpoints: /backup/db/ (дамп БД), /backup/media/ (архив медиафайлов).
+    # Префикс /backup без слэша покрывает /backup и все вложенные пути.
     location /backup {
         limit_req zone=per_ip_auth burst=5 nodelay;
         proxy_pass http://127.0.0.1:8000;

@@ -3,7 +3,7 @@ import subprocess
 import os
 from typing import Optional
 import threading
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 
 logger = logging.getLogger("postgre_dump")
@@ -261,6 +261,263 @@ def stream_pg_dump(
 
             if process.stderr:
                 process.stderr.close()
+
+
+
+def stream_tar(
+    base_dir: str,
+    files: Sequence[str] | None = None,
+    compression: bool = True,
+    chunk_size: int = 1024 * 1024,  # 1 MB
+) -> Iterator[bytes]:
+    """
+    Потоково создаёт tar/tar.gz из директории или выбранных файлов.
+
+    Архив НЕ сохраняется на диск.
+
+    Если files пустой или None, в архив попадает вся base_dir.
+
+    Args:
+        base_dir:
+            Базовая директория.
+
+        files:
+            Список относительных путей файлов относительно base_dir.
+            Если список пустой или None — архивируется вся директория.
+
+        compression:
+            Использовать gzip-сжатие (tar.gz).
+
+        chunk_size:
+            Размер одного передаваемого чанка.
+
+    Yields:
+        Чанки tar/tar.gz в виде bytes.
+
+    Raises:
+        FileNotFoundError:
+            Если base_dir или один из файлов не существует.
+
+        ValueError:
+            Если путь выходит за пределы base_dir.
+
+        IsADirectoryError:
+            Если один из указанных путей является директорией.
+
+        RuntimeError:
+            Если tar завершился с ошибкой.
+    """
+
+    base_dir = os.path.abspath(base_dir)
+
+    if not os.path.isdir(base_dir):
+        raise FileNotFoundError(
+            f"Базовая директория не существует: {base_dir}"
+        )
+
+    command = ["tar", "-c"]
+
+    if compression:
+        command.append("-z")
+
+    command.extend(["-f", "-"])
+
+    if not files:
+        # Архивируем всю директорию.
+        #
+        # Используем родительскую директорию, чтобы в архиве
+        # сохранилось имя самой base_dir:
+        #
+        # /data/files/
+        #     -> files/
+        #         -> ...
+        parent_dir = os.path.dirname(base_dir)
+        folder_name = os.path.basename(base_dir)
+
+        command.extend([
+            "-C",
+            parent_dir,
+            folder_name,
+        ])
+
+        item_count = "all"
+
+    else:
+        # Архивируем только указанные файлы.
+        normalized_files: list[str] = []
+
+        for file_path in files:
+            if not file_path:
+                raise ValueError(
+                    "Имя файла не может быть пустым."
+                )
+
+            if os.path.isabs(file_path):
+                raise ValueError(
+                    f"Абсолютный путь запрещён: {file_path}"
+                )
+
+            full_path = os.path.abspath(
+                os.path.join(base_dir, file_path)
+            )
+
+            # Защита от ../
+            try:
+                relative_path = os.path.relpath(
+                    full_path,
+                    base_dir,
+                )
+            except ValueError:
+                raise ValueError(
+                    f"Некорректный путь: {file_path}"
+                )
+
+            if (
+                relative_path == os.pardir
+                or relative_path.startswith(os.pardir + os.sep)
+            ):
+                raise ValueError(
+                    f"Путь выходит за пределы base_dir: {file_path}"
+                )
+
+            if not os.path.exists(full_path):
+                raise FileNotFoundError(
+                    f"Файл не существует: {file_path}"
+                )
+
+            if os.path.isdir(full_path):
+                raise IsADirectoryError(
+                    f"Ожидался файл, получена директория: {file_path}"
+                )
+
+            normalized_files.append(relative_path)
+
+        command.extend([
+            "-C",
+            base_dir,
+            *normalized_files,
+        ])
+
+        item_count = len(normalized_files)
+
+    logger.info(
+        "Запуск tar для %s элементов из '%s' (compression=%s)",
+        item_count,
+        base_dir,
+        compression,
+    )
+
+    process = None
+    stderr_data = bytearray()
+
+    try:
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=0,
+        )
+
+        # Читаем stderr параллельно, чтобы pipe не переполнился
+        # и tar не заблокировался.
+        def read_stderr() -> None:
+            assert process is not None
+            assert process.stderr is not None
+
+            while True:
+                data = process.stderr.read(4096)
+
+                if not data:
+                    break
+
+                stderr_data.extend(data)
+
+        stderr_thread = threading.Thread(
+            target=read_stderr,
+            daemon=True,
+        )
+        stderr_thread.start()
+
+        assert process.stdout is not None
+
+        # Потоково отдаём stdout tar вызывающему коду.
+        while True:
+            chunk = process.stdout.read(chunk_size)
+
+            if not chunk:
+                break
+
+            yield chunk
+
+        return_code = process.wait()
+
+        # Ждём завершения чтения stderr.
+        stderr_thread.join()
+
+        if return_code != 0:
+            error_output = stderr_data.decode(
+                "utf-8",
+                errors="replace",
+            ).strip()
+
+            logger.error(
+                "Ошибка при выполнении tar (код возврата %d)",
+                return_code,
+            )
+
+            if error_output:
+                logger.error(
+                    "--- stderr ---\n%s\n--------------",
+                    error_output,
+                )
+
+            logger.error(
+                "Использованная команда: %s",
+                " ".join(command),
+            )
+
+            raise RuntimeError(
+                f"tar завершился с кодом {return_code}"
+            )
+
+        logger.info(
+            "tar успешно завершён для '%s'.",
+            base_dir,
+        )
+
+    except FileNotFoundError:
+        # Если base_dir существует, значит ошибка, скорее всего,
+        # связана с отсутствием самого tar.
+        if os.path.isdir(base_dir):
+            logger.error(
+                "Утилита 'tar' не найдена в PATH."
+            )
+
+        raise
+
+    finally:
+        if process is not None:
+            # Если генератор закрыли раньше времени
+            # (например, клиент разорвал HTTP-соединение),
+            # останавливаем дочерний процесс.
+            if process.poll() is None:
+                logger.warning(
+                    "Остановка tar из-за прерывания streaming."
+                )
+
+                process.kill()
+
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+
+            if process.stdout:
+                process.stdout.close()
+
+            if process.stderr:
+                process.stderr.close()
+
 
 
                 
