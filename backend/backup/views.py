@@ -11,7 +11,7 @@ from rest_framework import status
 from utils.backup_functions import stream_pg_dump, stream_tar
 
 BACKUP_FILENAME_TEMPLATE = 'backup-postgre-{timestamp}.dump'
-BACKUP_MEDIA_FILENAME_TEMPLATE = 'backup-media-{timestamp}.tar.gz'
+BACKUP_MEDIA_FILENAME_TEMPLATE = 'backup-media-{timestamp}.tar'
 
 
 def _access_key_denied(request):
@@ -64,7 +64,7 @@ def backup_db(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def backup_media(request):
-    """Архив всех медиафайлов (tar.gz) потоком. Доступ по ключу access_key."""
+    """Архив всех медиафайлов потоком. Доступ по ключу access_key."""
     if _access_key_denied(request):
         return _access_denied()
 
@@ -79,6 +79,6 @@ def backup_media(request):
         )
 
     return _streaming_file_response(
-        stream_tar(base_dir=str(media_root)),
+        stream_tar(base_dir=str(media_root), compression=False),
         _backup_filename(BACKUP_MEDIA_FILENAME_TEMPLATE),
     )
