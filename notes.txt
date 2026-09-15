@@ -15,3 +15,8 @@ sudo chown nginx:nginx /var/lib/nginx/tmp
 
 sudo nft flush ruleset && sudo systemctl restart docker
 
+Подключиться к контейнеру
+docker compose exec backend sh
+
+Пересобрать контейнер
+docker compose up -d --build backend
