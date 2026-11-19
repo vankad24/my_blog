@@ -1,8 +1,9 @@
 from django.test import TestCase
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from .models import Post, Tag, PostLike
 from users.models import User
+from users.testing import RedisTestCaseMixin
 
 
 class TagModelTest(TestCase):
@@ -149,7 +150,7 @@ class PostLikeModelTest(TestCase):
         self.assertEqual(PostLike.objects.count(), 1)
 
 
-class PostAPITest(APITestCase):
+class PostAPITest(RedisTestCaseMixin, APITestCase):
     """Тесты API для постов."""
 
     def setUp(self):
@@ -172,9 +173,12 @@ class PostAPITest(APITestCase):
         self.post.tags.add(self.tag)
 
     def get_token(self, user):
-        from rest_framework_simplejwt.tokens import RefreshToken
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
+        response = APIClient().post(
+            '/api/auth/login/',
+            {'login': user.login, 'password': 'testpass123'},
+            format='json',
+        )
+        return response.data['access']
 
     def test_list_posts(self):
         """Список опубликованных постов."""
@@ -285,6 +289,19 @@ class PostAPITest(APITestCase):
         response = self.client.get('/api/posts/liked/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
+
+    def test_like_count_persisted(self):
+        """Счётчик лайков сохраняется в БД."""
+        token = self.get_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+        self.client.post(f'/api/posts/{self.post.pk}/like/')
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.likes_count, 1)
+
+        self.client.post(f'/api/posts/{self.post.pk}/like/')
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.likes_count, 0)
 
     def test_tags_list(self):
         """Список тегов."""

@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const accessToken = ref(localStorage.getItem('accessToken') || null)
   const refreshToken = ref(localStorage.getItem('refreshToken') || null)
+  const guestToken = ref(localStorage.getItem('guestToken') || null)
 
   const isAuthenticated = computed(() => !!accessToken.value)
   const isModerator = computed(() => user.value?.role === 'moderator' || user.value?.role === 'admin')
@@ -24,6 +25,27 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken.value = null
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
+  }
+
+  function setGuestToken(token) {
+    guestToken.value = token || null
+    if (token) {
+      localStorage.setItem('guestToken', token)
+    } else {
+      localStorage.removeItem('guestToken')
+    }
+  }
+
+  // Гостевой токен нужен для идентификации посетителя (просмотры постов)
+  async function ensureGuestToken(force = false) {
+    if (!force && guestToken.value) return guestToken.value
+    try {
+      const { data } = await apiClient.post('/auth/guest/')
+      setGuestToken(data.token)
+      return data.token
+    } catch {
+      return guestToken.value
+    }
   }
 
   async function fetchUser() {
@@ -66,6 +88,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
     clearTokens()
     user.value = null
+    // После выхода остаёмся гостями — получаем/продлеваем гостевой токен
+    await ensureGuestToken(true)
   }
 
   async function updateProfile(data) {
@@ -105,21 +129,27 @@ export const useAuthStore = defineStore('auth', () => {
     if (accessToken.value) {
       try {
         await fetchUser()
+        return
       } catch {
         clearTokens()
       }
     }
+    // Гость (или только что сброшенная сессия) получает гостевой токен
+    await ensureGuestToken(true)
   }
 
   return {
     user,
     accessToken,
     refreshToken,
+    guestToken,
     isAuthenticated,
     isModerator,
     isAdmin,
     setTokens,
     clearTokens,
+    setGuestToken,
+    ensureGuestToken,
     fetchUser,
     login,
     register,

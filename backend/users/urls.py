@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     CustomTokenObtainPairView,
     CustomTokenRefreshView,
+    GuestTokenView,
     RegisterView,
     LogoutView,
     UserProfileView,
@@ -20,6 +21,7 @@ urlpatterns = [
     # Аутентификация
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token'),
     path('auth/refresh/', CustomTokenRefreshView.as_view(), name='token-refresh'),
+    path('auth/guest/', GuestTokenView.as_view(), name='guest-token'),
     # path('auth/register/', RegisterView.as_view(), name='register'),  # Временно отключён
     path('auth/logout/', LogoutView.as_view(), name='logout'),
 

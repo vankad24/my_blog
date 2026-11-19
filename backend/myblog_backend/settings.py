@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party
     'rest_framework',
-    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'drf_spectacular',
     # Local apps
@@ -88,6 +87,10 @@ DB_PORT = os.getenv('DB_PORT', '5432')
 
 # Redis
 REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+# Окно дедупликации просмотров поста (секунды)
+POST_VIEW_TTL = int(os.getenv('POST_VIEW_TTL', '1800'))
+# Время жизни гостевого токена (секунды), по умолчанию 30 дней
+GUEST_TOKEN_TTL = int(os.getenv('GUEST_TOKEN_TTL', '2592000'))
 
 DATABASES = {
     'default': {
@@ -148,7 +151,8 @@ AUTH_USER_MODEL = 'users.User'
 # DRF Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'users.authentication.SessionJWTAuthentication',
+        'users.authentication.GuestAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
@@ -166,7 +170,8 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME', '60'))),
     'REFRESH_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME', '10080'))),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    # Отзыв токенов хранится в Redis (см. users/authentication.py), БД-блэклист не используется
+    'BLACKLIST_AFTER_ROTATION': False,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
@@ -174,6 +179,7 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
     'TOKEN_OBTAIN_SERIALIZER': 'users.serializers.CustomTokenObtainPairSerializer',
+    'TOKEN_REFRESH_SERIALIZER': 'users.serializers.SessionTokenRefreshSerializer',
 }
 
 

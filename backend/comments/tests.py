@@ -1,10 +1,11 @@
 from django.test import TestCase
 from django.contrib.contenttypes.models import ContentType
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from .models import Comment
 from posts.models import Post
 from users.models import User
+from users.testing import RedisTestCaseMixin
 
 
 class CommentModelTest(TestCase):
@@ -77,7 +78,7 @@ class CommentModelTest(TestCase):
         self.assertEqual(parent.replies_count, 2)
 
 
-class CommentAPITest(APITestCase):
+class CommentAPITest(RedisTestCaseMixin, APITestCase):
     """Тесты API для комментариев."""
 
     def setUp(self):
@@ -94,9 +95,12 @@ class CommentAPITest(APITestCase):
         self.ct = ContentType.objects.get_for_model(Post)
 
     def get_token(self, user):
-        from rest_framework_simplejwt.tokens import RefreshToken
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
+        response = APIClient().post(
+            '/api/auth/login/',
+            {'login': user.login, 'password': 'testpass123'},
+            format='json',
+        )
+        return response.data['access']
 
     def test_list_comments(self):
         """Список комментариев."""

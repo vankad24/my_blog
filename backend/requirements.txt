@@ -7,3 +7,5 @@ pillow
 drf-spectacular
 python-dotenv
 gunicorn
+redis
+fakeredis

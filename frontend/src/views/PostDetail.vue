@@ -21,7 +21,8 @@ const showCopied = ref(false)
 
 const isAuthor = computed(() => {
   if (!authStore.user || !post.value) return false
-  return authStore.user.login === post.value.author_login
+  const authorLogin = post.value.author?.login || post.value.author_login
+  return Boolean(authorLogin) && authStore.user.login === authorLogin
 })
 
 onMounted(async () => {
@@ -29,11 +30,24 @@ onMounted(async () => {
     await postsStore.fetchPost(route.params.id)
     post.value = postsStore.currentPost
     liked.value = post.value.is_liked || false
+    await countView()
     await loadComments()
   } finally {
     loading.value = false
   }
 })
+
+async function countView() {
+  if (!post.value) return
+  try {
+    const data = await postsStore.registerPostView(post.value.id)
+    if (typeof data.views === 'number') {
+      post.value.views = data.views
+    }
+  } catch {
+    // Счётчик просмотров не критичен
+  }
+}
 
 async function loadComments() {
   try {

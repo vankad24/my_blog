@@ -78,6 +78,11 @@ export const usePostsStore = defineStore('posts', () => {
     return data
   }
 
+  async function registerPostView(id) {
+    const { data } = await apiClient.post(`/posts/${id}/view/`)
+    return data
+  }
+
   return {
     posts,
     currentPost,
@@ -94,5 +99,6 @@ export const usePostsStore = defineStore('posts', () => {
     createTag,
     fetchComments,
     createComment,
+    registerPostView,
   }
 })

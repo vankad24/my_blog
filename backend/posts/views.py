@@ -1,7 +1,11 @@
 from rest_framework import status, permissions, generics, filters, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.db.models import F
 from django.utils import timezone
+import hashlib
+from users import redis_store
 from .models import Post, PostLike, Tag
 from .serializers import (
     PostListSerializer,
@@ -83,6 +87,63 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.save()
 
 
+def get_visitor_key(request) -> str:
+    """Идентификатор посетителя для дедупликации просмотров."""
+    user = getattr(request, 'user', None)
+    if user is not None and user.is_authenticated:
+        return f'u:{user.pk}'
+
+    visitor_id = getattr(request, 'visitor_id', None)
+    if visitor_id:
+        return f'g:{visitor_id}'
+
+    # Запасной вариант: IP + User-Agent (например, если гость не получил токен)
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    ip = forwarded_for.split(',')[0].strip() or request.META.get('REMOTE_ADDR', '')
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    digest = hashlib.sha256(f'{ip}|{user_agent}'.encode('utf-8')).hexdigest()[:16]
+    return f'ip:{digest}'
+
+
+class PostViewCountView(APIView):
+    """Засчитать просмотр поста (не чаще одного раза в POST_VIEW_TTL секунд)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, pk):
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response(
+                {'error': 'Пост не найден'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Просмотры черновиков и постов на модерации не считаем
+        if post.status != Post.Status.PUBLISHED:
+            return Response(
+                {'counted': False, 'views': post.views},
+                status=status.HTTP_200_OK,
+            )
+
+        try:
+            counted = redis_store.register_post_view(pk, get_visitor_key(request))
+        except Exception:
+            return Response(
+                {'error': 'Сервис просмотров недоступен'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        if counted:
+            Post.objects.filter(pk=pk).update(views=F('views') + 1)
+            post.refresh_from_db(fields=['views'])
+
+        return Response(
+            {'counted': counted, 'views': post.views},
+            status=status.HTTP_200_OK,
+        )
+
+
 class PostLikeView(generics.GenericAPIView):
     """Лайк/отмена лайка поста."""
 
@@ -105,12 +166,14 @@ class PostLikeView(generics.GenericAPIView):
             # Удалить лайк (toggle)
             like.delete()
             post.likes_count = max(0, post.likes_count - 1)
+            post.save(update_fields=['likes_count'])
             return Response(
                 {'liked': False, 'likes_count': post.likes_count},
                 status=status.HTTP_200_OK,
             )
 
         post.likes_count += 1
+        post.save(update_fields=['likes_count'])
         return Response(
             {'liked': True, 'likes_count': post.likes_count},
             status=status.HTTP_201_CREATED,

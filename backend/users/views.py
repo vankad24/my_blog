@@ -1,6 +1,6 @@
 from rest_framework import status, permissions, generics
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -10,6 +10,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
+from . import redis_store
 from .serializers import (
     UserSerializer,
     UserRegisterSerializer,
@@ -19,6 +20,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     EmailVerificationSerializer,
     CustomTokenObtainPairSerializer,
+    SessionRefreshToken,
 )
 
 User = get_user_model()
@@ -57,29 +59,71 @@ class RegisterView(generics.CreateAPIView):
 
 
 class LogoutView(generics.GenericAPIView):
-    """Выход из системы (черный список токена)."""
+    """Выход из системы: отзыв серверной сессии в Redis."""
 
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        try:
-            refresh_token = request.data.get('refresh')
-            if not refresh_token:
-                return Response(
-                    {'error': 'Refresh token required'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
             return Response(
-                {'message': 'Вы успешно вышли'},
-                status=status.HTTP_200_OK,
+                {'error': 'Refresh token required'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
+
+        try:
+            token = SessionRefreshToken(refresh_token)
+        except TokenError as e:
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        sid = token.payload.get('sid')
+        if not sid:
+            return Response(
+                {'error': 'Invalid refresh token'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Удаляем сессию — access и refresh перестают работать
+        redis_store.delete_session(sid, request.user.id)
+        return Response(
+            {'message': 'Вы успешно вышли'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class GuestTokenView(generics.GenericAPIView):
+    """Выдача гостевого токена. Доступен без авторизации."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = getattr(request, 'guest_token', None)
+        if token:
+            visitor_id = redis_store.get_guest_visitor(token, touch=True)
+            if visitor_id:
+                return Response(
+                    {
+                        'token': token,
+                        'token_type': 'Guest',
+                        'visitor_id': visitor_id,
+                        'expires_in': settings.GUEST_TOKEN_TTL,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+        token, visitor_id = redis_store.create_guest_session()
+        return Response(
+            {
+                'token': token,
+                'token_type': 'Guest',
+                'visitor_id': visitor_id,
+                'expires_in': settings.GUEST_TOKEN_TTL,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class UserProfileView(generics.RetrieveAPIView):
@@ -113,6 +157,8 @@ class PasswordChangeView(generics.GenericAPIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        # Отзываем все сессии пользователя: старые токены больше не действуют
+        redis_store.invalidate_user_sessions(request.user.id)
         return Response(
             {'message': 'Пароль успешно изменён'},
             status=status.HTTP_200_OK,
@@ -185,7 +231,9 @@ class PasswordResetConfirmView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
+        # Сброс пароля инвалидирует все активные сессии
+        redis_store.invalidate_user_sessions(user.id)
 
         return Response(
             {'message': 'Пароль успешно изменён'},

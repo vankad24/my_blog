@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { usePostsStore } from '@/stores/posts'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import TagChip from '@/components/TagChip.vue'
 import { formatRelativeDate } from '@/utils/formatDate'
@@ -30,7 +31,9 @@ const props = defineProps({
 
 const emit = defineEmits(['like'])
 const authStore = useAuthStore()
+const postsStore = usePostsStore()
 const expanded = ref(false)
+const viewCounted = ref(false)
 const copied = ref(false)
 const shareTooltip = ref(false)
 const showCopied = ref(false)
@@ -39,6 +42,9 @@ const authorName = computed(() => props.post.author_name || props.post.author?.n
 const authorLogin = computed(() => props.post.author_login || props.post.author?.login)
 const isLiked = computed(() => props.post.is_liked)
 const likesCount = computed(() => props.post.likes_count)
+const viewsCount = computed(() =>
+  Number(props.post.views || 0).toLocaleString('ru-RU')
+)
 
 const postUrl = computed(() => window.location.origin + `/post/${props.post.id}`)
 
@@ -49,6 +55,22 @@ const contentMaxHeight = computed(() => {
 
 function toggleExpand() {
   expanded.value = !expanded.value
+  if (expanded.value) {
+    countView()
+  }
+}
+
+async function countView() {
+  if (viewCounted.value) return
+  viewCounted.value = true
+  try {
+    const data = await postsStore.registerPostView(props.post.id)
+    if (typeof data.views === 'number') {
+      props.post.views = data.views
+    }
+  } catch {
+    // Счётчик просмотров не должен мешать чтению поста
+  }
 }
 
 async function sharePost() {
@@ -193,7 +215,7 @@ function handleDelete() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              <span>{{ post.views || 0 }}</span>
+              <span>{{ viewsCount }}</span>
             </span>
             <span class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
               Просмотры

@@ -1,11 +1,12 @@
 from django.test import TestCase
 from django.contrib.contenttypes.models import ContentType
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from .models import Moderation
 from posts.models import Post
 from comments.models import Comment
 from users.models import User
+from users.testing import RedisTestCaseMixin
 
 
 class ModerationModelTest(TestCase):
@@ -59,7 +60,7 @@ class ModerationModelTest(TestCase):
         self.assertIn('declined', [s[0] for s in Moderation.Status.choices])
 
 
-class ModerationAPITest(APITestCase):
+class ModerationAPITest(RedisTestCaseMixin, APITestCase):
     """Тесты API модерации."""
 
     def setUp(self):
@@ -85,9 +86,12 @@ class ModerationAPITest(APITestCase):
         )
 
     def get_token(self, user):
-        from rest_framework_simplejwt.tokens import RefreshToken
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
+        response = APIClient().post(
+            '/api/auth/login/',
+            {'login': user.login, 'password': 'testpass123'},
+            format='json',
+        )
+        return response.data['access']
 
     def test_list_moderation_requires_auth(self):
         """Список модерации требует авторизации."""

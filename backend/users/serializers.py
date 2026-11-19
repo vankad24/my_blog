@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenRefreshSerializer,
+)
+from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -8,6 +13,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.core.mail import send_mail
 from django.conf import settings
+from . import redis_store
 from .models import User
 
 
@@ -157,12 +163,57 @@ class EmailVerificationSerializer(serializers.Serializer):
         return user
 
 
+class SessionRefreshToken(RefreshToken):
+    """Refresh-токен без записи outstanding-токенов в PostgreSQL.
+
+    Учёт сессий ведётся в Redis по sid, поэтому `outstand()` не нужен.
+    """
+
+    def outstand(self):
+        return None
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Кастомный сериализатор для JWT с данными пользователя."""
+    """Кастомный сериализатор для JWT с данными пользователя и сессией в Redis."""
 
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
+        # Серверная сессия: sid попадёт и в refresh, и в access
+        sid = redis_store.create_session(user.id, token[jwt_settings.JTI_CLAIM])
+        token['sid'] = sid
         token['login'] = user.login
         token['role'] = user.role
         return token
+
+
+class SessionTokenRefreshSerializer(TokenRefreshSerializer):
+    """Обновление токена с проверкой сессии и ротацией в Redis."""
+
+    token_class = SessionRefreshToken
+
+    def validate(self, attrs):
+        refresh = self.token_class(attrs['refresh'])
+        sid = refresh.payload.get('sid')
+        user_id = refresh.payload.get(jwt_settings.USER_ID_CLAIM)
+        jti = refresh.payload.get(jwt_settings.JTI_CLAIM)
+
+        if not sid or not redis_store.session_exists(sid, user_id):
+            raise AuthenticationFailed(
+                'Сессия не найдена или отозвана. Войдите снова.',
+                'session_revoked',
+            )
+
+        # Защита от повторного использования старого refresh-токена
+        if not redis_store.refresh_jti_matches(sid, jti):
+            raise AuthenticationFailed(
+                'Refresh-токен уже использован. Войдите снова.',
+                'refresh_reused',
+            )
+
+        data = super().validate(attrs)
+        new_refresh = self.token_class(data['refresh'])
+        redis_store.update_session(
+            sid, refresh_jti=new_refresh.payload.get(jwt_settings.JTI_CLAIM)
+        )
+        return data
