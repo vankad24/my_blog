@@ -1,19 +1,14 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { usePostsStore } from '@/stores/posts'
 import { useAuthStore } from '@/stores/auth'
 import PostList from '@/components/PostList.vue'
-import Pagination from '@/components/Pagination.vue'
 
 const postsStore = usePostsStore()
 const authStore = useAuthStore()
 
 const posts = ref([])
 const loading = ref(true)
-const currentPage = ref(1)
-const pageSize = 20
-
-const totalPages = computed(() => Math.ceil(posts.value.length / pageSize))
 
 onMounted(async () => {
   try {

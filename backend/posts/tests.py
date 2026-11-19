@@ -199,6 +199,28 @@ class PostAPITest(RedisTestCaseMixin, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
 
+    def test_list_posts_paginated_by_four(self):
+        """Главная страница получает посты порциями по 4."""
+        for index in range(4):
+            Post.objects.create(
+                title=f'Extra Post {index}',
+                content='Content',
+                author=self.author,
+                status=Post.Status.PUBLISHED,
+            )
+
+        first = self.client.get('/api/posts/')
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(first.data['count'], 5)
+        self.assertEqual(len(first.data['results']), 4)
+        self.assertIsNotNone(first.data['next'])
+        self.assertIsNone(first.data['previous'])
+
+        second = self.client.get('/api/posts/?page=2')
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(second.data['results']), 1)
+        self.assertIsNone(second.data['next'])
+
     def test_get_post_detail(self):
         """Детальный просмотр поста."""
         response = self.client.get(f'/api/posts/{self.post.pk}/')

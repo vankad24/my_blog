@@ -1,8 +1,6 @@
 <script setup>
-import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import PostCard from '@/components/PostCard.vue'
-import Pagination from '@/components/Pagination.vue'
 
 const authStore = useAuthStore()
 
@@ -17,7 +15,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['like', 'page-change', 'delete'])
+const emit = defineEmits(['like', 'delete'])
 
 const isAuthor = (post) => {
   return authStore.user?.login === post.author_login

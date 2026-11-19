@@ -12,9 +12,13 @@ export const usePostsStore = defineStore('posts', () => {
     previous: null,
   })
 
-  async function fetchPosts(params = {}) {
+  async function fetchPosts(params = {}, { append = false, shouldApply = null } = {}) {
     const { data } = await apiClient.get('/posts/', { params })
-    posts.value = data.results || data
+    // Устаревший ответ (пользователь уже сменил фильтр) не применяем
+    if (shouldApply && !shouldApply()) return data
+
+    const results = data.results || data
+    posts.value = append ? [...posts.value, ...results] : results
     pagination.value = {
       count: data.count || 0,
       next: data.next,

@@ -7,6 +7,7 @@ from django.utils import timezone
 import hashlib
 from users import redis_store
 from .models import Post, PostLike, Tag
+from .pagination import PostPagination
 from .serializers import (
     PostListSerializer,
     PostDetailSerializer,
@@ -18,6 +19,8 @@ from .serializers import (
 
 class PostListView(generics.ListCreateAPIView):
     """Список и создание постов."""
+
+    pagination_class = PostPagination
 
     def get_permissions(self):
         if self.request.method == 'POST':
