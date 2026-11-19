@@ -11,10 +11,12 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from . import redis_store
+from .authentication import get_guest_token
 from .serializers import (
     UserSerializer,
     UserRegisterSerializer,
     UserUpdateSerializer,
+    PendingRegistrationSerializer,
     PasswordChangeSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
@@ -25,11 +27,91 @@ from .serializers import (
 
 User = get_user_model()
 
+RATE_LIMIT_MESSAGE = 'Слишком много попыток, попробуйте позже'
+
+
+def get_client_ip(request) -> str:
+    """IP клиента с учётом прокси."""
+    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '') or ''
+
+
+def get_attempt_identifiers(request):
+    """Ключи для лимита попыток: IP и посетитель (пользователь / guest-токен)."""
+    identifiers = []
+
+    ip = get_client_ip(request)
+    if ip:
+        identifiers.append(f'ip:{ip}')
+
+    user = getattr(request, 'user', None)
+    if user is not None and user.is_authenticated:
+        identifiers.append(f'u:{user.pk}')
+        return identifiers
+
+    visitor_id = getattr(request, 'visitor_id', None)
+    if not visitor_id:
+        token = get_guest_token(request)
+        if token:
+            try:
+                visitor_id = redis_store.get_guest_visitor(token)
+            except Exception:
+                visitor_id = None
+    if visitor_id:
+        identifiers.append(f'g:{visitor_id}')
+
+    return identifiers
+
+
+def check_auth_rate_limit(request, scope: str):
+    """Вернуть Response 429, если лимит попыток превышен, иначе None."""
+    try:
+        for identifier in get_attempt_identifiers(request):
+            allowed, retry_after = redis_store.hit_rate_limit(
+                scope,
+                identifier,
+                settings.AUTH_RATE_LIMIT,
+                settings.AUTH_RATE_WINDOW,
+            )
+            if not allowed:
+                return Response(
+                    {'detail': RATE_LIMIT_MESSAGE},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                    headers={'Retry-After': str(retry_after)},
+                )
+    except Exception:
+        # Redis недоступен — не блокируем вход из-за лимитера
+        return None
+    return None
+
+
+def reset_auth_rate_limit(request, scope: str) -> None:
+    """Сбросить счётчик после успешной попытки."""
+    try:
+        for identifier in get_attempt_identifiers(request):
+            redis_store.reset_rate_limit(scope, identifier)
+    except Exception:
+        pass
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    """Эндпоинт входа с расширенным JWT."""
+    """Эндпоинт входа с расширенным JWT и лимитом попыток."""
 
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        limited = check_auth_rate_limit(request, 'login')
+        if limited is not None:
+            return limited
+
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == status.HTTP_200_OK:
+            reset_auth_rate_limit(request, 'login')
+
+        return response
 
 
 class CustomTokenRefreshView(TokenRefreshView):
@@ -39,22 +121,124 @@ class CustomTokenRefreshView(TokenRefreshView):
 
 
 class RegisterView(generics.CreateAPIView):
-    """Регистрация нового пользователя."""
+    """Регистрация нового пользователя (требует подтверждения модератора)."""
 
     serializer_class = UserRegisterSerializer
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        limited = check_auth_rate_limit(request, 'register')
+        if limited is not None:
+            return limited
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        serializer.save()
 
-        # Отправляем письмо с подтверждением email
-        # TODO: реализовать отправку email
+        reset_auth_rate_limit(request, 'register')
 
         return Response(
-            {'message': 'Пользователь успешно зарегистрирован'},
+            {'message': 'Ожидайте подтверждения регистрации'},
             status=status.HTTP_201_CREATED,
+        )
+
+
+class RegistrationListView(generics.ListAPIView):
+    """Заявки на регистрацию (только модераторы и админы)."""
+
+    serializer_class = PendingRegistrationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if not self.request.user.is_moderator:
+            return User.objects.none()
+
+        status_filter = self.request.query_params.get(
+            'status', User.RegistrationStatus.PENDING
+        )
+        if status_filter not in User.RegistrationStatus.values:
+            status_filter = User.RegistrationStatus.PENDING
+
+        return User.objects.filter(
+            registration_status=status_filter
+        ).order_by('-created_at')
+
+
+class RegistrationActionMixin:
+    """Общая логика принятия/отклонения заявки на регистрацию."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PendingRegistrationSerializer
+
+    def get_target(self, request, pk):
+        if not request.user.is_moderator:
+            return None, Response(
+                {'error': 'Нет прав'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            target = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return None, Response(
+                {'error': 'Пользователь не найден'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if target.is_moderator:
+            return None, Response(
+                {'error': 'Нельзя изменить регистрацию модератора или администратора'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return target, None
+
+
+class RegistrationAcceptView(RegistrationActionMixin, generics.GenericAPIView):
+    """Подтвердить регистрацию пользователя."""
+
+    def post(self, request, pk):
+        target, error = self.get_target(request, pk)
+        if error is not None:
+            return error
+
+        if target.registration_status == User.RegistrationStatus.APPROVED:
+            return Response(
+                {'message': 'Регистрация уже подтверждена'},
+                status=status.HTTP_200_OK,
+            )
+
+        target.registration_status = User.RegistrationStatus.APPROVED
+        target.save(update_fields=['registration_status', 'updated_at'])
+
+        return Response(
+            {
+                'message': 'Регистрация подтверждена',
+                'user': PendingRegistrationSerializer(target).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class RegistrationDeclineView(RegistrationActionMixin, generics.GenericAPIView):
+    """Отклонить регистрацию пользователя."""
+
+    def post(self, request, pk):
+        target, error = self.get_target(request, pk)
+        if error is not None:
+            return error
+
+        target.registration_status = User.RegistrationStatus.REJECTED
+        target.save(update_fields=['registration_status', 'updated_at'])
+        # Отзываем возможные активные сессии
+        redis_store.invalidate_user_sessions(target.id)
+
+        return Response(
+            {
+                'message': 'Регистрация отклонена',
+                'user': PendingRegistrationSerializer(target).data,
+            },
+            status=status.HTTP_200_OK,
         )
 
 

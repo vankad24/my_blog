@@ -1,10 +1,8 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
-const router = useRouter()
 
 const form = ref({
   login: '',
@@ -14,6 +12,7 @@ const form = ref({
   password_confirm: '',
 })
 const error = ref('')
+const success = ref('')
 const loading = ref(false)
 
 async function handleSubmit() {
@@ -29,18 +28,19 @@ async function handleSubmit() {
 
   loading.value = true
   try {
-    await authStore.register(
+    const data = await authStore.register(
       form.value.login,
       form.value.email,
       form.value.name,
       form.value.password,
       form.value.password_confirm
     )
-    // После регистрации — автоматический вход
-    await authStore.login(form.value.login, form.value.password)
-    router.push('/')
+    // Регистрация требует подтверждения модератора — вход не выполняем
+    success.value = data?.message || 'Ожидайте подтверждения регистрации'
   } catch (err) {
-    if (err.response?.data) {
+    if (err.response?.status === 429) {
+      error.value = err.response.data?.detail || 'Слишком много попыток, попробуйте позже'
+    } else if (err.response?.data) {
       const errors = err.response.data
       error.value = Object.entries(errors)
         .map(([k, v]) => Array.isArray(v) ? v.join(', ') : v)
@@ -62,7 +62,27 @@ async function handleSubmit() {
       {{ error }}
     </div>
 
-    <form @submit.prevent="handleSubmit" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+    <div
+      v-if="success"
+      class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-6 text-center"
+    >
+      <p class="text-lg font-medium">{{ success }}</p>
+      <p class="text-sm text-yellow-700 mt-2">
+        Доступ к аккаунту появится после подтверждения модератором.
+      </p>
+      <router-link
+        to="/login"
+        class="inline-block mt-4 text-primary-600 hover:underline text-sm"
+      >
+        Перейти к входу
+      </router-link>
+    </div>
+
+    <form
+      v-else
+      @submit.prevent="handleSubmit"
+      class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4"
+    >
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Логин</label>
         <input

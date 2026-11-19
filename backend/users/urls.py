@@ -5,6 +5,9 @@ from .views import (
     GuestTokenView,
     RegisterView,
     LogoutView,
+    RegistrationListView,
+    RegistrationAcceptView,
+    RegistrationDeclineView,
     UserProfileView,
     ProfileUpdateView,
     PasswordChangeView,
@@ -22,8 +25,13 @@ urlpatterns = [
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token'),
     path('auth/refresh/', CustomTokenRefreshView.as_view(), name='token-refresh'),
     path('auth/guest/', GuestTokenView.as_view(), name='guest-token'),
-    # path('auth/register/', RegisterView.as_view(), name='register'),  # Временно отключён
+    path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
+
+    # Заявки на регистрацию (модераторы и админы)
+    path('registrations/', RegistrationListView.as_view(), name='registrations'),
+    path('registrations/<int:pk>/accept/', RegistrationAcceptView.as_view(), name='registration-accept'),
+    path('registrations/<int:pk>/decline/', RegistrationDeclineView.as_view(), name='registration-decline'),
 
     # Восстановление пароля
     path('auth/password/reset/request/', PasswordResetRequestView.as_view(), name='password-reset-request'),

@@ -26,6 +26,18 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class PendingRegistrationSerializer(serializers.ModelSerializer):
+    """Заявка на регистрацию для панели модерации."""
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'login', 'name', 'email',
+            'registration_status', 'created_at',
+        ]
+        read_only_fields = fields
+
+
 class UserRegisterSerializer(serializers.ModelSerializer):
     """Сериализатор для регистрации."""
 
@@ -44,6 +56,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
+        # Новый пользователь должен дождаться подтверждения модератора
+        validated_data['registration_status'] = User.RegistrationStatus.PENDING
         user = User(**validated_data)
         user.set_password(password)
         user.save()
@@ -178,6 +192,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     @classmethod
     def get_token(cls, user):
+        # Регистрация должна быть одобрена модератором/админом.
+        # Проверка выполняется до создания серверной сессии.
+        if user.registration_status == User.RegistrationStatus.PENDING:
+            raise AuthenticationFailed(
+                'Ожидайте подтверждения регистрации',
+                'registration_pending',
+            )
+        if user.registration_status == User.RegistrationStatus.REJECTED:
+            raise AuthenticationFailed(
+                'Регистрация отклонена',
+                'registration_rejected',
+            )
+
         token = super().get_token(user)
         # Серверная сессия: sid попадёт и в refresh, и в access
         sid = redis_store.create_session(user.id, token[jwt_settings.JTI_CLAIM])

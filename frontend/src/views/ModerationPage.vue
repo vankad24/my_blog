@@ -4,12 +4,19 @@ import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
 
 const authStore = useAuthStore()
+const activeTab = ref('content')
+
 const items = ref([])
 const loading = ref(true)
 const filterStatus = ref('pending')
 
+const registrations = ref([])
+const registrationsLoading = ref(false)
+const pendingRegistrationsCount = ref(0)
+
 onMounted(() => {
   loadModeration()
+  loadRegistrations()
 })
 
 async function loadModeration() {
@@ -23,6 +30,31 @@ async function loadModeration() {
     items.value = []
   } finally {
     loading.value = false
+  }
+}
+
+async function loadRegistrations() {
+  registrationsLoading.value = true
+  try {
+    const { data } = await apiClient.get('/registrations/', {
+      params: { status: 'pending' },
+    })
+    registrations.value = data.results || data
+    pendingRegistrationsCount.value = registrations.value.length
+  } catch {
+    registrations.value = []
+    pendingRegistrationsCount.value = 0
+  } finally {
+    registrationsLoading.value = false
+  }
+}
+
+function changeTab(tab) {
+  activeTab.value = tab
+  if (tab === 'registrations') {
+    loadRegistrations()
+  } else {
+    loadModeration()
   }
 }
 
@@ -50,100 +82,219 @@ function changeStatus(status) {
   filterStatus.value = status
   loadModeration()
 }
+
+async function acceptRegistration(id) {
+  try {
+    await apiClient.post(`/registrations/${id}/accept/`)
+    registrations.value = registrations.value.filter(r => r.id !== id)
+    pendingRegistrationsCount.value = registrations.value.length
+  } catch (e) {
+    alert('Ошибка: ' + (e.response?.data?.error || 'не удалось'))
+  }
+}
+
+async function declineRegistration(id) {
+  if (!confirm('Отклонить регистрацию? Пользователь не сможет войти.')) return
+  try {
+    await apiClient.post(`/registrations/${id}/decline/`)
+    registrations.value = registrations.value.filter(r => r.id !== id)
+    pendingRegistrationsCount.value = registrations.value.length
+  } catch (e) {
+    alert('Ошибка: ' + (e.response?.data?.error || 'не удалось'))
+  }
+}
+
+function formatDate(value) {
+  if (!value) return ''
+  return new Date(value).toLocaleString('ru-RU', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
+}
 </script>
 
 <template>
   <div>
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Панель модерации</h1>
 
-    <!-- Status tabs -->
-    <div class="flex space-x-2 mb-6">
+    <!-- Основные вкладки -->
+    <div class="flex space-x-2 mb-6 border-b border-gray-200 pb-4">
       <button
-        v-for="s in [
-          { value: 'pending', label: 'Ожидают' },
-          { value: 'accepted', label: 'Принятые' },
-          { value: 'declined', label: 'Отклонённые' },
-        ]"
-        :key="s.value"
-        @click="changeStatus(s.value)"
+        @click="changeTab('content')"
         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        :class="filterStatus === s.value
+        :class="activeTab === 'content'
           ? 'bg-primary-600 text-white'
           : 'bg-white border border-gray-300 hover:bg-gray-50'"
       >
-        {{ s.label }}
+        Контент
+      </button>
+      <button
+        @click="changeTab('registrations')"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center space-x-2"
+        :class="activeTab === 'registrations'
+          ? 'bg-primary-600 text-white'
+          : 'bg-white border border-gray-300 hover:bg-gray-50'"
+      >
+        <span>Регистрации</span>
+        <span
+          v-if="pendingRegistrationsCount > 0"
+          class="text-xs font-semibold px-2 py-0.5 rounded-full"
+          :class="activeTab === 'registrations'
+            ? 'bg-white text-primary-600'
+            : 'bg-primary-100 text-primary-700'"
+        >
+          {{ pendingRegistrationsCount }}
+        </span>
       </button>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="space-y-4">
-      <div v-for="i in 3" :key="i" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-pulse">
-        <div class="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
-        <div class="h-6 bg-gray-200 rounded w-3/4"></div>
+    <!-- Вкладка: регистрации -->
+    <div v-if="activeTab === 'registrations'">
+      <div v-if="registrationsLoading" class="space-y-4">
+        <div v-for="i in 3" :key="i" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div class="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
+          <div class="h-6 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+
+      <div v-else-if="registrations.length === 0" class="text-center py-12">
+        <p class="text-gray-500 text-lg">Нет заявок на регистрацию</p>
+      </div>
+
+      <div v-else class="space-y-4">
+        <div
+          v-for="user in registrations"
+          :key="user.id"
+          class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center space-x-2 mb-2">
+                <span class="text-xs font-medium bg-yellow-50 text-yellow-700 px-2 py-1 rounded">
+                  Ожидает подтверждения
+                </span>
+                <span class="text-xs text-gray-400">
+                  {{ formatDate(user.created_at) }}
+                </span>
+              </div>
+
+              <h3 class="text-lg font-semibold text-gray-900">
+                {{ user.name || user.login }}
+              </h3>
+              <p class="text-sm text-gray-600">Логин: {{ user.login }}</p>
+              <p class="text-sm text-gray-600">Email: {{ user.email }}</p>
+            </div>
+
+            <div class="flex space-x-2 ml-4">
+              <button
+                @click="acceptRegistration(user.id)"
+                class="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                Принять
+              </button>
+              <button
+                @click="declineRegistration(user.id)"
+                class="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              >
+                Отклонить
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Empty -->
-    <div v-else-if="items.length === 0" class="text-center py-12">
-      <p class="text-gray-500 text-lg">Нет объектов на модерации</p>
-    </div>
+    <!-- Вкладка: контент -->
+    <div v-else>
+      <!-- Status tabs -->
+      <div class="flex space-x-2 mb-6">
+        <button
+          v-for="s in [
+            { value: 'pending', label: 'Ожидают' },
+            { value: 'accepted', label: 'Принятые' },
+            { value: 'declined', label: 'Отклонённые' },
+          ]"
+          :key="s.value"
+          @click="changeStatus(s.value)"
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          :class="filterStatus === s.value
+            ? 'bg-primary-600 text-white'
+            : 'bg-white border border-gray-300 hover:bg-gray-50'"
+        >
+          {{ s.label }}
+        </button>
+      </div>
 
-    <!-- List -->
-    <div v-else class="space-y-4">
-      <div
-        v-for="item in items"
-        :key="item.id"
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
-      >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <!-- Content info -->
-            <div class="flex items-center space-x-2 mb-2">
-              <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                {{ item.content_type_name === 'post' ? 'Пост' : 'Комментарий' }}
-              </span>
-              <span
-                class="text-xs font-medium px-2 py-1 rounded"
-                :class="{
-                  'bg-yellow-50 text-yellow-700': item.status === 'pending',
-                  'bg-green-50 text-green-700': item.status === 'accepted',
-                  'bg-red-50 text-red-700': item.status === 'declined',
-                }"
-              >
-                {{ item.status === 'pending' ? 'Ожидает' : item.status === 'accepted' ? 'Принят' : 'Отклонён' }}
-              </span>
-            </div>
+      <!-- Loading -->
+      <div v-if="loading" class="space-y-4">
+        <div v-for="i in 3" :key="i" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div class="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
+          <div class="h-6 bg-gray-200 rounded w-3/4"></div>
+        </div>
+      </div>
 
-            <!-- Content -->
-            <div v-if="item.content_object">
-              <h3 v-if="item.content_object.title" class="text-lg font-semibold text-gray-900">
-                {{ item.content_object.title }}
-              </h3>
-              <p v-if="item.content_object.body" class="text-gray-600 text-sm">
-                {{ item.content_object.body }}
+      <!-- Empty -->
+      <div v-else-if="items.length === 0" class="text-center py-12">
+        <p class="text-gray-500 text-lg">Нет объектов на модерации</p>
+      </div>
+
+      <!-- List -->
+      <div v-else class="space-y-4">
+        <div
+          v-for="item in items"
+          :key="item.id"
+          class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <!-- Content info -->
+              <div class="flex items-center space-x-2 mb-2">
+                <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                  {{ item.content_type_name === 'post' ? 'Пост' : 'Комментарий' }}
+                </span>
+                <span
+                  class="text-xs font-medium px-2 py-1 rounded"
+                  :class="{
+                    'bg-yellow-50 text-yellow-700': item.status === 'pending',
+                    'bg-green-50 text-green-700': item.status === 'accepted',
+                    'bg-red-50 text-red-700': item.status === 'declined',
+                  }"
+                >
+                  {{ item.status === 'pending' ? 'Ожидает' : item.status === 'accepted' ? 'Принят' : 'Отклонён' }}
+                </span>
+              </div>
+
+              <!-- Content -->
+              <div v-if="item.content_object">
+                <h3 v-if="item.content_object.title" class="text-lg font-semibold text-gray-900">
+                  {{ item.content_object.title }}
+                </h3>
+                <p v-if="item.content_object.body" class="text-gray-600 text-sm">
+                  {{ item.content_object.body }}
+                </p>
+              </div>
+
+              <!-- Moderator comment -->
+              <p v-if="item.comment" class="text-sm text-gray-500 mt-2 italic">
+                Модератор: {{ item.comment }}
               </p>
             </div>
 
-            <!-- Moderator comment -->
-            <p v-if="item.comment" class="text-sm text-gray-500 mt-2 italic">
-              Модератор: {{ item.comment }}
-            </p>
-          </div>
-
-          <!-- Actions -->
-          <div v-if="item.status === 'pending'" class="flex space-x-2 ml-4">
-            <button
-              @click="accept(item.id)"
-              class="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-            >
-              Принять
-            </button>
-            <button
-              @click="decline(item.id)"
-              class="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-            >
-              Отклонить
-            </button>
+            <!-- Actions -->
+            <div v-if="item.status === 'pending'" class="flex space-x-2 ml-4">
+              <button
+                @click="accept(item.id)"
+                class="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                Принять
+              </button>
+              <button
+                @click="decline(item.id)"
+                class="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              >
+                Отклонить
+              </button>
+            </div>
           </div>
         </div>
       </div>

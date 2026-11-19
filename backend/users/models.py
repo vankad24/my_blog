@@ -31,6 +31,11 @@ class User(AbstractUser):
         MODERATOR = 'moderator', 'Модератор'
         ADMIN = 'admin', 'Администратор'
 
+    class RegistrationStatus(models.TextChoices):
+        PENDING = 'pending', 'Ожидает подтверждения'
+        APPROVED = 'approved', 'Подтверждена'
+        REJECTED = 'rejected', 'Отклонена'
+
     username = None  # type: ignore[assignment]
     login = models.CharField('Логин', max_length=150, unique=True, db_index=True)
     email = models.EmailField('Email', unique=True)
@@ -43,6 +48,13 @@ class User(AbstractUser):
         db_index=True,
     )
     email_verified_at = models.DateTimeField('Email подтверждён', null=True, blank=True)
+    registration_status = models.CharField(
+        'Статус регистрации',
+        max_length=20,
+        choices=RegistrationStatus.choices,
+        default=RegistrationStatus.APPROVED,
+        db_index=True,
+    )
     created_at = models.DateTimeField('Создан', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлён', auto_now=True)
 
@@ -63,3 +75,11 @@ class User(AbstractUser):
     @property
     def is_admin(self) -> bool:
         return self.role == self.Role.ADMIN
+
+    @property
+    def is_registration_approved(self) -> bool:
+        return self.registration_status == self.RegistrationStatus.APPROVED
+
+    @property
+    def is_registration_pending(self) -> bool:
+        return self.registration_status == self.RegistrationStatus.PENDING

@@ -91,6 +91,9 @@ REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 POST_VIEW_TTL = int(os.getenv('POST_VIEW_TTL', '1800'))
 # Время жизни гостевого токена (секунды), по умолчанию 30 дней
 GUEST_TOKEN_TTL = int(os.getenv('GUEST_TOKEN_TTL', '2592000'))
+# Ограничение попыток входа/регистрации: 5 попыток за 5 минут
+AUTH_RATE_LIMIT = int(os.getenv('AUTH_RATE_LIMIT', '5'))
+AUTH_RATE_WINDOW = int(os.getenv('AUTH_RATE_WINDOW', '300'))
 
 DATABASES = {
     'default': {

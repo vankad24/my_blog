@@ -177,3 +177,35 @@ def register_post_view(post_id, visitor: str) -> bool:
         get_redis().set(key, '1', nx=True, ex=settings.POST_VIEW_TTL)
     )
 
+
+# ---------------------------------------------------------------------------
+# Ограничение попыток входа и регистрации
+# ---------------------------------------------------------------------------
+
+def _rate_limit_key(scope: str, identifier: str) -> str:
+    return f'ratelimit:{scope}:{identifier}'
+
+
+def hit_rate_limit(scope: str, identifier: str, limit: int, window: int):
+    """Увеличить счётчик попыток в текущем окне.
+
+    Возвращает (разрешено, сколько секунд ждать до сброса окна).
+    """
+    key = _rate_limit_key(scope, identifier)
+    r = get_redis()
+    pipe = r.pipeline()
+    pipe.incr(key)
+    pipe.ttl(key)
+    current, ttl = pipe.execute()
+
+    if ttl is None or ttl < 0:
+        r.expire(key, window)
+        ttl = window
+
+    return current <= limit, int(ttl)
+
+
+def reset_rate_limit(scope: str, identifier: str) -> None:
+    """Сбросить счётчик попыток (после успешного входа/регистрации)."""
+    get_redis().delete(_rate_limit_key(scope, identifier))
+

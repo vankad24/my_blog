@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 from rest_framework import status
 
+from users.testing import RedisTestCaseMixin
+
 User = get_user_model()
 
 
@@ -61,7 +63,7 @@ class UserModelTest(TestCase):
         self.assertFalse(normal.is_moderator)
 
 
-class AuthAPITest(APITestCase):
+class AuthAPITest(RedisTestCaseMixin, APITestCase):
     """Тесты API аутентификации."""
 
     def setUp(self):
@@ -77,12 +79,25 @@ class AuthAPITest(APITestCase):
             'password': 'securepass123',
         }
 
+    def register_and_approve(self):
+        """Регистрация + одобрение модератором (для тестов, где нужен вход)."""
+        self.client.post('/api/auth/register/', self.register_data, format='json')
+        User.objects.filter(login=self.register_data['login']).update(
+            registration_status=User.RegistrationStatus.APPROVED
+        )
+
     def test_register(self):
-        """Тест регистрации."""
+        """Регистрация создаёт заявку на подтверждение."""
         response = self.client.post('/api/auth/register/', self.register_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['message'], 'Ожидайте подтверждения регистрации')
         self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(User.objects.first().login, 'newuser')
+        user = User.objects.first()
+        self.assertEqual(user.login, 'newuser')
+        self.assertEqual(
+            user.registration_status,
+            User.RegistrationStatus.PENDING,
+        )
 
     def test_register_password_mismatch(self):
         """Регистрация с несовпадающими паролями."""
@@ -99,7 +114,7 @@ class AuthAPITest(APITestCase):
 
     def test_login(self):
         """Тест входа."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         response = self.client.post('/api/auth/login/', self.login_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('access', response.data)
@@ -112,7 +127,7 @@ class AuthAPITest(APITestCase):
 
     def test_token_refresh(self):
         """Обновление токена."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         login_response = self.client.post('/api/auth/login/', self.login_data, format='json')
         refresh_token = login_response.data['refresh']
 
@@ -126,7 +141,7 @@ class AuthAPITest(APITestCase):
 
     def test_logout(self):
         """Выход из системы."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         login_response = self.client.post('/api/auth/login/', self.login_data, format='json')
         access_token = login_response.data['access']
         refresh_token = login_response.data['refresh']
@@ -141,7 +156,7 @@ class AuthAPITest(APITestCase):
 
     def test_get_profile(self):
         """Получение своего профиля."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         login_response = self.client.post('/api/auth/login/', self.login_data, format='json')
         access_token = login_response.data['access']
 
@@ -152,7 +167,7 @@ class AuthAPITest(APITestCase):
 
     def test_update_profile(self):
         """Обновление профиля."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         login_response = self.client.post('/api/auth/login/', self.login_data, format='json')
         access_token = login_response.data['access']
 
@@ -166,7 +181,7 @@ class AuthAPITest(APITestCase):
 
     def test_change_password(self):
         """Смена пароля."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         login_response = self.client.post('/api/auth/login/', self.login_data, format='json')
         access_token = login_response.data['access']
 
@@ -193,7 +208,7 @@ class AuthAPITest(APITestCase):
 
     def test_change_password_wrong_old(self):
         """Смена пароля с неверным старым."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         login_response = self.client.post('/api/auth/login/', self.login_data, format='json')
         access_token = login_response.data['access']
 
@@ -212,7 +227,7 @@ class AuthAPITest(APITestCase):
     @override_settings(DEBUG=True)
     def test_password_reset_request(self):
         """Запрос на восстановление пароля."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         response = self.client.post(
             '/api/auth/password/reset/request/',
             {'email': 'newuser@example.com'},
@@ -225,7 +240,7 @@ class AuthAPITest(APITestCase):
     @override_settings(DEBUG=True)
     def test_password_reset_confirm(self):
         """Сброс пароля."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
 
         # Получаем токен
         reset_response = self.client.post(
@@ -257,7 +272,7 @@ class AuthAPITest(APITestCase):
 
     def test_email_verify(self):
         """Верификация email."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         user = User.objects.first()
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -274,7 +289,7 @@ class AuthAPITest(APITestCase):
 
     def test_email_resend(self):
         """Повторная отправка верификации."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         login_response = self.client.post('/api/auth/login/', self.login_data, format='json')
         access_token = login_response.data['access']
 
@@ -284,7 +299,7 @@ class AuthAPITest(APITestCase):
 
     def test_public_profile(self):
         """Публичный профиль пользователя."""
-        self.client.post('/api/auth/register/', self.register_data, format='json')
+        self.register_and_approve()
         response = self.client.get('/api/users/newuser/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['login'], 'newuser')
