@@ -10,6 +10,11 @@ services:
       - ./app_data:/app_data
     environment:
       - DJANGO_SETTINGS_MODULE=myblog_backend.settings
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   postgres:
@@ -24,6 +29,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # command: ["redis-server", "--appendonly", "yes"]
+    command:
+      - redis-server
+      - --save
+      - "900"
+      - "1"
+      - --save
+      - "300"
+      - "10"
+      - --save
+      - "60"
+      - "10000"
+    volumes:
+      - redis_data:/data
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -45,4 +67,4 @@ services:
 volumes:
   postgres_data:
   pgadmin_data:
-
+  redis_data:

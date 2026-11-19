@@ -86,6 +86,9 @@ DB_PASSWORD = os.getenv('DB_PASSWORD', '')
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = os.getenv('DB_PORT', '5432')
 
+# Redis
+REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
