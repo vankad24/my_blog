@@ -15,7 +15,6 @@ const authStore = useAuthStore()
 
 const loading = ref(true)
 const comments = ref([])
-const liked = ref(false)
 const post = ref(null)
 const showCopied = ref(false)
 
@@ -29,7 +28,6 @@ onMounted(async () => {
   try {
     await postsStore.fetchPost(route.params.id)
     post.value = postsStore.currentPost
-    liked.value = post.value.is_liked || false
     await countView()
     await loadComments()
   } finally {
@@ -65,7 +63,7 @@ async function handleLike() {
   }
   const result = await postsStore.likePost(post.value.id)
   post.value.likes_count = result.likes_count
-  liked.value = result.liked
+  post.value.is_liked = result.liked
 }
 
 async function handleDelete() {
