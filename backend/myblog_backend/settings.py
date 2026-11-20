@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'posts',
     'comments',
     'moderation',
+    'analytics',
     'upload',
     'backup',
 ]
@@ -89,6 +90,8 @@ DB_PORT = os.getenv('DB_PORT', '5432')
 REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 # Окно дедупликации просмотров поста (секунды)
 POST_VIEW_TTL = int(os.getenv('POST_VIEW_TTL', '1800'))
+# Окно дедупликации посещений сайта (секунды)
+SITE_VISIT_TTL = int(os.getenv('SITE_VISIT_TTL', '1800'))
 # Время жизни гостевого токена (секунды), по умолчанию 30 дней
 GUEST_TOKEN_TTL = int(os.getenv('GUEST_TOKEN_TTL', '2592000'))
 # Ограничение попыток входа/регистрации: 5 попыток за 1 минуту

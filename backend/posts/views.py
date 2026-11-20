@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import F
 from django.utils import timezone
-import hashlib
 from users import redis_store
+from users.visitors import get_visitor_key
 from .models import Post, PostLike, Tag
 from .pagination import PostPagination
 from .serializers import (
@@ -88,24 +88,6 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.deleted_at = timezone.now()
         instance.status = Post.Status.DRAFT
         instance.save()
-
-
-def get_visitor_key(request) -> str:
-    """Идентификатор посетителя для дедупликации просмотров."""
-    user = getattr(request, 'user', None)
-    if user is not None and user.is_authenticated:
-        return f'u:{user.pk}'
-
-    visitor_id = getattr(request, 'visitor_id', None)
-    if visitor_id:
-        return f'g:{visitor_id}'
-
-    # Запасной вариант: IP + User-Agent (например, если гость не получил токен)
-    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    ip = forwarded_for.split(',')[0].strip() or request.META.get('REMOTE_ADDR', '')
-    user_agent = request.META.get('HTTP_USER_AGENT', '')
-    digest = hashlib.sha256(f'{ip}|{user_agent}'.encode('utf-8')).hexdigest()[:16]
-    return f'ip:{digest}'
 
 
 class PostViewCountView(APIView):

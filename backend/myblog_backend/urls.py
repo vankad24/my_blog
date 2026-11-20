@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/', include('posts.urls')),
     path('api/', include('comments.urls')),
     path('api/', include('moderation.urls')),
+    path('api/', include('analytics.urls')),
     path('api/', include('upload.urls')),
     # Backup (вне /api/): /backup/db/
     path('backup/', include('backup.urls')),
