@@ -46,8 +46,10 @@ class PostViewCountTests(APITestCase):
             f'/api/posts/{post_id}/view/', **(headers or {})
         )
 
-    def guest_headers(self):
-        token = self.client.post('/api/auth/guest/', {}, format='json').data['token']
+    def guest_headers(self, ip):
+        token = self.client.post(
+            '/api/auth/guest/', {}, format='json', REMOTE_ADDR=ip
+        ).data['token']
         return {'HTTP_AUTHORIZATION': f'Guest {token}'}
 
     def test_first_view_counted(self):
@@ -72,9 +74,9 @@ class PostViewCountTests(APITestCase):
 
     def test_different_guests_counted_separately(self):
         """Разные гостевые токены — разные посетители."""
-        guest1 = self.guest_headers()
-        guest2 = self.guest_headers()
-        # Второй вызов выдаёт новый токен, т.к. запрос без Guest-заголовка
+        guest1 = self.guest_headers('198.51.100.10')
+        guest2 = self.guest_headers('198.51.100.11')
+        # Разные IP — разные посетители, даже без Guest-заголовка
         self.assertNotEqual(
             guest1['HTTP_AUTHORIZATION'], guest2['HTTP_AUTHORIZATION']
         )

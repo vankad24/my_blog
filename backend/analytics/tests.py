@@ -18,9 +18,9 @@ class SiteVisitCounterTests(RedisTestCaseMixin, APITestCase):
     def visit(self, headers=None):
         return self.client.post('/api/visits/', {}, format='json', **(headers or {}))
 
-    def guest_headers(self):
+    def guest_headers(self, ip):
         token = self.client.post(
-            '/api/auth/guest/', {}, format='json'
+            '/api/auth/guest/', {}, format='json', REMOTE_ADDR=ip
         ).data['token']
         return {'HTTP_AUTHORIZATION': f'Guest {token}'}
 
@@ -42,8 +42,8 @@ class SiteVisitCounterTests(RedisTestCaseMixin, APITestCase):
 
     def test_different_guests_counted_separately(self):
         """Разные гостевые токены — разные посетители."""
-        guest1 = self.guest_headers()
-        guest2 = self.guest_headers()
+        guest1 = self.guest_headers('198.51.100.10')
+        guest2 = self.guest_headers('198.51.100.11')
 
         first = self.visit(headers=guest1)
         second = self.visit(headers=guest2)
@@ -57,7 +57,7 @@ class SiteVisitCounterTests(RedisTestCaseMixin, APITestCase):
 
     def test_authenticated_user_counted_separately(self):
         """Авторизованный пользователь не смешивается с гостем."""
-        guest = self.guest_headers()
+        guest = self.guest_headers('198.51.100.10')
         self.visit(headers=guest)
 
         user = User.objects.create_user(

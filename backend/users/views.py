@@ -279,15 +279,31 @@ class LogoutView(generics.GenericAPIView):
 
 
 class GuestTokenView(generics.GenericAPIView):
-    """Выдача гостевого токена. Доступен без авторизации."""
+    """Выдача гостевого токена. Доступен без авторизации.
+
+    Если браузер не прислал токен (например, инкогнито с очищенным
+    localStorage), посетитель восстанавливается по IP: выдаётся новый
+    токен, но с тем же visitor_id.
+    """
 
     permission_classes = [permissions.AllowAny]
 
+    @staticmethod
+    def _remember_ip(ip, visitor_id):
+        """Обновить связку IP -> visitor_id; счётчикам она не критична."""
+        try:
+            redis_store.remember_guest_visitor_for_ip(ip, visitor_id)
+        except Exception:
+            pass
+
     def post(self, request):
+        ip = get_client_ip(request)
         token = getattr(request, 'guest_token', None)
+
         if token:
             visitor_id = redis_store.get_guest_visitor(token, touch=True)
             if visitor_id:
+                self._remember_ip(ip, visitor_id)
                 return Response(
                     {
                         'token': token,
@@ -298,7 +314,17 @@ class GuestTokenView(generics.GenericAPIView):
                     status=status.HTTP_200_OK,
                 )
 
-        token, visitor_id = redis_store.create_guest_session()
+        # Токена нет или он недействителен — пробуем узнать посетителя по IP
+        visitor_id = None
+        if ip:
+            try:
+                visitor_id = redis_store.get_guest_visitor_by_ip(ip)
+            except Exception:
+                visitor_id = None
+
+        token, visitor_id = redis_store.create_guest_session(visitor_id)
+        self._remember_ip(ip, visitor_id)
+
         return Response(
             {
                 'token': token,

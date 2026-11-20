@@ -1,4 +1,6 @@
 """Общая работа с Redis: клиент, сессии авторизации и гостевые токены."""
+import hashlib
+import hmac
 import json
 import secrets
 import uuid
@@ -44,6 +46,16 @@ def _user_sessions_key(user_id) -> str:
 
 def _guest_key(token: str) -> str:
     return f'auth:guest:{token}'
+
+
+def _guest_ip_key(ip: str) -> str:
+    """Ключ связки IP -> visitor_id (сам IP в Redis не пишем)."""
+    digest = hmac.new(
+        str(settings.SECRET_KEY).encode('utf-8'),
+        ip.strip().lower().encode('utf-8'),
+        hashlib.sha256,
+    ).hexdigest()
+    return f'auth:guest:ip:{digest}'
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +173,24 @@ def get_guest_visitor(token: str, touch: bool = False):
     if visitor_id and touch:
         r.expire(key, settings.GUEST_TOKEN_TTL)
     return visitor_id
+
+
+def get_guest_visitor_by_ip(ip: str):
+    """Вернуть visitor_id, ранее связанный с IP, или None."""
+    if not ip:
+        return None
+    return get_redis().get(_guest_ip_key(ip))
+
+
+def remember_guest_visitor_for_ip(ip: str, visitor_id: str) -> None:
+    """Запомнить связку IP -> visitor_id и продлить её TTL."""
+    if not ip or not visitor_id:
+        return
+    get_redis().set(
+        _guest_ip_key(ip),
+        visitor_id,
+        ex=settings.GUEST_TOKEN_TTL,
+    )
 
 
 # ---------------------------------------------------------------------------
